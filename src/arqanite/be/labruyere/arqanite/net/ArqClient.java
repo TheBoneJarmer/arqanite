@@ -151,7 +151,7 @@ public class ArqClient {
 
             if (!reason.isEmpty()) {
                 try {
-                    run("connection", reason);
+                    run("leave", reason);
                 } catch (ArqanoreException e) {
                     ArqLogger.logError(null, e);
                 }
