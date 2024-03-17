@@ -15,6 +15,10 @@ public class ArqClient {
     private static ClientThread thread;
 
     public static boolean isConnected() {
+        if (thread == null) {
+            return false;
+        }
+
         return thread.isConnected();
     }
 
