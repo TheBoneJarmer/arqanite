@@ -153,7 +153,13 @@ public class ArqClient {
                 try {
                     run("leave", reason);
                 } catch (ArqanoreException e) {
-                    ArqLogger.logError(null, e);
+                    ArqLogger.logError(e);
+                }
+            } else {
+                try {
+                    run("leave", "");
+                } catch (ArqanoreException e) {
+                    ArqLogger.logError(e);
                 }
             }
 
