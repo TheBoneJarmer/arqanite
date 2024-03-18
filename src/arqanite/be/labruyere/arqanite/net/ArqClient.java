@@ -1,220 +1,70 @@
 package be.labruyere.arqanite.net;
 
-import be.labruyere.arqanite.ArqLogger;
 import be.labruyere.arqanore.exceptions.ArqanoreException;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
-import java.util.ArrayList;
 
 public class ArqClient {
-    private static ClientThread thread;
+    private static String host;
+    private static int port;
 
-    public static boolean isConnected() {
-        if (thread == null) {
-            return false;
-        }
-
-        return thread.isConnected();
+    public static String getHost() {
+        return host;
     }
 
-    public static void connect(String ip, int port) throws ArqanoreException {
-        thread = new ClientThread(ip, port);
-        thread.start();
+    public static void setHost(String host) {
+        ArqClient.host = host;
     }
 
-    public static void disconnect() throws ArqanoreException {
-        if (thread == null) {
-            return;
-        }
-
-        thread.disconnect();
+    public static int getPort() {
+        return port;
     }
 
-    public static void send(ArqMessage message) throws ArqanoreException {
-        if (thread == null) {
-            return;
-        }
+    public static void setPort(int port) {
+        ArqClient.port = port;
+    }
+
+    public static String send(String action, String body) throws ArqanoreException {
+        var buffer = new byte[1024 * 10];
+        var sb = new StringBuilder();
+        var eof = false;
+
+        var msg = new ArqMessage();
+        msg.setAction(action);
+        msg.setBody(body);
 
         try {
-            thread.send(message);
-        } catch (Exception e) {
-            throw new ArqanoreException("Failed to send message", e);
-        }
-    }
+            var address = new InetSocketAddress(host, port);
+            var socket = new Socket();
+            socket.connect(address, 1000);
 
-    public static void send(String command, String body) throws ArqanoreException {
-        if (thread == null) {
-            return;
-        }
+            var os = socket.getOutputStream();
+            var is = socket.getInputStream();
 
-        try {
-            thread.send(command, body);
-        } catch (Exception e) {
-            throw new ArqanoreException("Failed to send message", e);
-        }
-    }
+            os.write(msg.toBytes());
 
-    private static class ClientThread extends Thread {
-        private final Socket socket;
-        private final InputStream is;
-        private final OutputStream os;
-        private final StringBuilder data;
-        private boolean isConnected;
-        private boolean isTerminated;
+            while (!eof) {
+                var read = is.read(buffer);
 
-        public boolean isConnected() {
-            return isConnected;
-        }
+                if (read == -1) {
+                    eof = true;
+                } else {
+                    var chunk = new String(buffer, 0, read);
+                    sb.append(chunk);
+                }
 
-        public ClientThread(String ip, int port) throws ArqanoreException {
-            super("arq_client");
-
-            try {
-                socket = new Socket();
-                socket.setTcpNoDelay(true);
-                socket.connect(new InetSocketAddress(ip, port), 1000);
-
-                is = socket.getInputStream();
-                os = socket.getOutputStream();
-                isConnected = true;
-                data = new StringBuilder();
-            } catch (Exception e) {
-                throw new ArqanoreException(e);
-            }
-        }
-
-        public void disconnect() throws ArqanoreException {
-            isConnected = false;
-            isTerminated = true;
-
-            try {
-                socket.close();
-                is.close();
-                os.close();
-            } catch (IOException e) {
-                throw new ArqanoreException("Failed to close connection", e);
-            }
-        }
-
-        public void send(ArqMessage message) throws ArqanoreException {
-            if (!isConnected) {
-                return;
-            }
-
-            try {
-                os.write(message.toBytes());
-            } catch (IOException e) {
-                throw new ArqanoreException(e);
-            }
-        }
-
-        public void send(String command, String body) throws ArqanoreException {
-            var message = new ArqMessage();
-            message.setCommand(command);
-            message.setBody(body);
-
-            send(message);
-        }
-
-        @Override
-        public void run() {
-            var buffer = new byte[10 * 1024];
-            var reason = "";
-
-            while (isConnected) {
-                try {
-                    var read = is.read(buffer);
-
-                    if (read == -1) {
-                        reason = "Connection lost";
-                        break;
-                    }
-
-                    data.append(new String(buffer, 0, read));
-
-                    for (var message : parse()) {
-                        run(message.getCommand(), message.getBody());
-                    }
-                } catch (SocketException e) {
-                    if (!isTerminated) {
-                        reason = "Connection lost";
-                    }
-
-                    break;
-                } catch (Exception e) {
-                    ArqLogger.logError("An unknown error occurred", e);
-                    reason = "A client error occurred";
+                if (sb.toString().endsWith("</ARQ>")) {
                     break;
                 }
             }
 
-            if (!reason.isEmpty()) {
-                try {
-                    run("leave", reason);
-                } catch (ArqanoreException e) {
-                    ArqLogger.logError(e);
-                }
-            } else {
-                try {
-                    run("leave", "");
-                } catch (ArqanoreException e) {
-                    ArqLogger.logError(e);
-                }
-            }
-
-            try {
-                is.close();
-                os.close();
-                socket.close();
-            } catch (IOException e) {
-                ArqLogger.logError("Failed to close connection");
-            }
-
-            isConnected = false;
-            thread = null;
+            socket.close();
+        } catch (IOException e) {
+            throw new ArqanoreException("Failed to send message", e);
         }
 
-        private void run(String command, String body) throws ArqanoreException {
-            var action = ArqActions.get(command);
-
-            if (action != null) {
-                //ArqLogger.logInfo("[CLIENT] " + command + " " + body);
-                action.run(body);
-            } else {
-                ArqLogger.logError("Action " + command + " not found");
-            }
-        }
-
-        private ArrayList<ArqMessage> parse() {
-            var result = new ArrayList<ArqMessage>();
-            var index1 = data.toString().indexOf(ArqMessage.PREFIX);
-            var index2 = data.toString().indexOf(ArqMessage.SUFFIX);
-            var raw = "";
-
-            while (index1 != -1 && index2 != -1) {
-                //ArqLogger.logInfo("[CLIENT][RAW] " + data);
-                raw = data.substring(index1, index2 + ArqMessage.SUFFIX.length());
-
-                try {
-                    var message = new ArqMessage();
-                    message.parse(raw.getBytes(), raw.length());
-
-                    result.add(message);
-                    data.replace(index1, index2 + ArqMessage.SUFFIX.length(), "");
-                } catch (ArqanoreException e) {
-                    ArqLogger.logError("Failed to parse message", e);
-                }
-
-                index1 = data.toString().indexOf(ArqMessage.PREFIX);
-                index2 = data.toString().indexOf(ArqMessage.SUFFIX);
-            }
-
-            return result;
-        }
+        return sb.toString();
     }
 }

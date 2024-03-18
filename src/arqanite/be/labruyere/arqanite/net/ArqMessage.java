@@ -6,19 +6,19 @@ public class ArqMessage {
     public static final String PREFIX = "<ARQ>";
     public static final String SUFFIX = "</ARQ>";
 
-    private String command;
+    private String action;
     private String body;
 
-    public String getCommand() {
-        return command;
+    public String getAction() {
+        return action;
     }
 
     public String getBody() {
         return body;
     }
 
-    public void setCommand(String command) {
-        this.command = command;
+    public void setAction(String action) {
+        this.action = action;
     }
 
     public void setBody(String body) {
@@ -30,7 +30,7 @@ public class ArqMessage {
     }
 
     public ArqMessage() {
-        this.command = null;
+        this.action = null;
         this.body = null;
     }
 
@@ -42,8 +42,8 @@ public class ArqMessage {
             raw = raw.replace(PREFIX, "");
             raw = raw.replace(SUFFIX, "");
 
-            command = raw.split("\\#\\$\\#")[0];
-            body = raw.split("\\#\\$\\#")[1];
+            action = raw.split("#\\$#")[0];
+            body = raw.split("#\\$#")[1];
 
             if (body.equals("null")) {
                 body = null;
@@ -54,6 +54,6 @@ public class ArqMessage {
     }
 
     public byte[] toBytes() {
-        return (PREFIX + command + "#$#" + body + SUFFIX).getBytes();
+        return (PREFIX + action + "#$#" + body + SUFFIX).getBytes();
     }
 }

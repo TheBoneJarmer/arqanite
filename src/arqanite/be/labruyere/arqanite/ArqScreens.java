@@ -18,20 +18,36 @@ public class ArqScreens {
     private static ScreenEntry current;
     private static ScreenEntry next;
 
-    public static String getCurrentScreen() {
+    public static String getCurrentScreenName() {
+        if (current == null) {
+            return null;
+        }
+        
+        return current.screen;
+    }
+    
+    public static String getNextScreenName() {
+        if (next == null) {
+            return null;
+        }
+        
+        return next.screen;
+    }
+
+    public static <T extends IScreen> T getCurrentScreen() {
         if (current == null) {
             return null;
         }
 
-        return current.screen;
+        return (T)screens.get(current.screen);
     }
 
-    public static String getScreenNext() {
+    public static <T extends IScreen> T getScreenNext() {
         if (next == null) {
             return null;
         }
 
-        return next.screen;
+        return (T)screens.get(next.screen);
     }
 
     public static void addScreen(String key, IScreen screen) {
@@ -74,6 +90,55 @@ public class ArqScreens {
         if (current != null) {
             screens.get(current.screen).input(window, c);
         }
+    }
+    
+    public static void navigate(String screen) {
+        navigate(screen, null);
+    }
+    
+    public static void navigate(String screen, Object arg0) {
+        var args = new Object[1];
+        args[0] = arg0;
+        
+        navigate(screen, args);
+    }
+    
+    public static void navigate(String screen, Object arg0, Object arg1) {
+        var args = new Object[2];
+        args[0] = arg0;
+        args[1] = arg1;
+        
+        navigate(screen, args);
+    }
+    
+    public static void navigate(String screen, Object arg0, Object arg1, Object arg2) {
+        var args = new Object[3];
+        args[0] = arg0;
+        args[1] = arg1;
+        args[2] = arg2;
+        
+        navigate(screen, args);
+    }
+    
+    public static void navigate(String screen, Object arg0, Object arg1, Object arg2, Object arg3) {
+        var args = new Object[4];
+        args[0] = arg0;
+        args[1] = arg1;
+        args[2] = arg2;
+        args[3] = arg3;
+        
+        navigate(screen, args);
+    }
+    
+    public static void navigate(String screen, Object arg0, Object arg1, Object arg2, Object arg3, Object arg4) {
+        var args = new Object[5];
+        args[0] = arg0;
+        args[1] = arg1;
+        args[2] = arg2;
+        args[3] = arg3;
+        args[4] = arg4;
+        
+        navigate(screen, args);
     }
 
     public static void navigate(String screen, Object[] args) {
