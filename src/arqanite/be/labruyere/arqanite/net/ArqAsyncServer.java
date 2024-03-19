@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 
 public class ArqAsyncServer {
@@ -30,7 +31,11 @@ public class ArqAsyncServer {
             return null;
         }
 
-        return Arrays.stream(server.clients).filter(x -> x.clientId == id).findFirst().orElse(null);
+        var stream = Arrays.stream(server.clients);
+        stream = stream.filter(Objects::nonNull);
+        stream = stream.filter(f -> f.clientId == id);
+
+        return stream.findFirst().orElse(null);
     }
 
     public static void start(int port) throws ArqanoreException {
@@ -193,6 +198,7 @@ public class ArqAsyncServer {
             private final StringBuilder data;
             private boolean isConnected;
             private boolean isTerminated;
+            private Object userData;
 
             public boolean isConnected() {
                 return isConnected;
@@ -200,6 +206,14 @@ public class ArqAsyncServer {
 
             public int getClientId() {
                 return clientId;
+            }
+
+            public Object getUserData() {
+                return userData;
+            }
+
+            public void setUserData(Object userData) {
+                this.userData = userData;
             }
 
             public ServerClientThread(Socket socket) throws ArqanoreException {
