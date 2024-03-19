@@ -5,10 +5,12 @@ import be.labruyere.arqanore.exceptions.ArqanoreException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 public class ArqClient {
     private static String host;
     private static int port;
+    private static int timeout = 1000;
 
     public static String getHost() {
         return host;
@@ -26,6 +28,14 @@ public class ArqClient {
         ArqClient.port = port;
     }
 
+    public static int getTimeout() {
+        return timeout;
+    }
+
+    public static void setTimeout(int timeout) {
+        ArqClient.timeout = timeout;
+    }
+
     public static String send(String action, String body) throws ArqanoreException {
         var buffer = new byte[1024 * 10];
         var sb = new StringBuilder();
@@ -38,7 +48,7 @@ public class ArqClient {
         try {
             var address = new InetSocketAddress(host, port);
             var socket = new Socket();
-            socket.connect(address, 1000);
+            socket.connect(address, timeout);
 
             var os = socket.getOutputStream();
             var is = socket.getInputStream();
@@ -61,6 +71,8 @@ public class ArqClient {
             }
 
             socket.close();
+        } catch (SocketTimeoutException e) {
+            throw new ArqanoreException("Socket timeout", e);
         } catch (IOException e) {
             throw new ArqanoreException("Failed to send message", e);
         }
