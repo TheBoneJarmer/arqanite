@@ -43,6 +43,10 @@ public class ArqLogger {
     public static void logError(Exception e) {
         logError(null, e);
     }
+    
+    public static void logSuccess(String message) {
+        log(ArqLogType.SUCCESS, message);
+    }
 
     public static void logError(String message, Exception e) {
         if (message != null) {
@@ -69,6 +73,7 @@ public class ArqLogger {
         if (type == ArqLogType.INFO) line = "[INFO] " + message;
         if (type == ArqLogType.WARNING) line = "[WARNING] " + message;
         if (type == ArqLogType.ERROR) line = "[ERROR] " + message;
+        if (type == ArqLogType.SUCCESS) line = "[SUCCESS] " + message;
 
         if (toFile) {
             try {
