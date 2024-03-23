@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Date;
 
 public class ArqLogger {
     private static Path folder;
@@ -43,7 +45,7 @@ public class ArqLogger {
     public static void logError(Exception e) {
         logError(null, e);
     }
-    
+
     public static void logSuccess(String message) {
         log(ArqLogType.SUCCESS, message);
     }
@@ -68,12 +70,15 @@ public class ArqLogger {
     }
 
     private static void log(ArqLogType type, String message) {
-        var line = "";
+        var time = LocalTime.now();
+        var line = "[" + time.getHour() + ":" + time.getMinute() + ":" + time.getSecond() + "]";
 
-        if (type == ArqLogType.INFO) line = "[INFO] " + message;
-        if (type == ArqLogType.WARNING) line = "[WARNING] " + message;
-        if (type == ArqLogType.ERROR) line = "[ERROR] " + message;
-        if (type == ArqLogType.SUCCESS) line = "[SUCCESS] " + message;
+        if (type == ArqLogType.INFO) line += "[INFO] ";
+        if (type == ArqLogType.WARNING) line += "[WARNING] ";
+        if (type == ArqLogType.ERROR) line += "[ERROR] ";
+        if (type == ArqLogType.SUCCESS) line += "[SUCCESS] ";
+
+        line += message;
 
         if (toFile) {
             try {
@@ -93,13 +98,13 @@ public class ArqLogger {
             }
         }
     }
-    
+
     public static void init(ArqLogLevel level, boolean toFile, boolean toConsole) {
-    	ArqLogger.level = level;
+        ArqLogger.level = level;
         ArqLogger.toFile = toFile;
         ArqLogger.toConsole = toConsole;
-        
-    	if (toFile) {
+
+        if (toFile) {
             folder = createFolder();
             file = createFile(folder);
         }

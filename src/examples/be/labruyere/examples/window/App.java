@@ -10,8 +10,13 @@ public class App {
 
     private static void onOpen() {
         ArqLogger.init(ArqLogLevel.DEBUG, false, true);
-        ArqScreens.addScreen("Main", new ScreenMain());
-        ArqScreens.navigate("Main", null);
+
+        try {
+            ArqScreens.addScreen("Main", new ScreenMain());
+            ArqScreens.navigate("Main", null);
+        } catch (ArqanoreException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void onClose() {
