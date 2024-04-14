@@ -4,7 +4,6 @@ import be.labruyere.arqanite.ArqInput;
 import be.labruyere.arqanite.ArqLogger;
 import be.labruyere.arqanite.ArqMusic;
 import be.labruyere.arqanite.ArqScreens;
-import be.labruyere.arqanite.enums.ArqLogLevel;
 import be.labruyere.arqanore.Window;
 import be.labruyere.arqanore.exceptions.ArqanoreException;
 
@@ -12,7 +11,7 @@ public class App {
     private static Window window;
 
     private static void onOpen() {
-        ArqLogger.init(ArqLogLevel.DEBUG, false, true);
+        ArqLogger.init(false, true);
 
         try {
             Assets.load();

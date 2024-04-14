@@ -1,7 +1,6 @@
 package be.labruyere.examples.window;
 
 import be.labruyere.arqanite.*;
-import be.labruyere.arqanite.enums.ArqLogLevel;
 import be.labruyere.arqanore.*;
 import be.labruyere.arqanore.exceptions.ArqanoreException;
 
@@ -9,7 +8,7 @@ public class App {
     private static Window window;
 
     private static void onOpen() {
-        ArqLogger.init(ArqLogLevel.DEBUG, false, true);
+        ArqLogger.init(false, true);
 
         try {
             ArqScreens.addScreen("Main", new ScreenMain());

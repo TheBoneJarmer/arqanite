@@ -1,6 +1,5 @@
 package be.labruyere.arqanite;
 
-import be.labruyere.arqanite.enums.ArqLogLevel;
 import be.labruyere.arqanite.enums.ArqLogType;
 
 import java.io.*;
@@ -9,14 +8,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Date;
 
 public class ArqLogger {
     private static Path folder;
     private static Path file;
     private static boolean toFile;
     private static boolean toConsole;
-    private static ArqLogLevel level;
 
     public static boolean isToFile() {
         return toFile;
@@ -24,10 +21,6 @@ public class ArqLogger {
 
     public static boolean isToConsole() {
         return toConsole;
-    }
-
-    public static ArqLogLevel getLevel() {
-        return level;
     }
 
     public static void logInfo(String message) {
@@ -55,18 +48,12 @@ public class ArqLogger {
             log(ArqLogType.ERROR, message);
         }
 
-        if (level == ArqLogLevel.DEBUG) {
-            var sw = new StringWriter();
-            var pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
+        var sw = new StringWriter();
+        var pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
 
-            log(ArqLogType.ERROR, e.getMessage());
-            log(ArqLogType.ERROR, sw.toString());
-        }
-
-        if (level == ArqLogLevel.PRODUCTION) {
-            log(ArqLogType.ERROR, "An exception occurred");
-        }
+        log(ArqLogType.ERROR, e.getMessage());
+        log(ArqLogType.ERROR, sw.toString());
     }
 
     private static void log(ArqLogType type, String message) {
@@ -99,8 +86,7 @@ public class ArqLogger {
         }
     }
 
-    public static void init(ArqLogLevel level, boolean toFile, boolean toConsole) {
-        ArqLogger.level = level;
+    public static void init(boolean toFile, boolean toConsole) {
         ArqLogger.toFile = toFile;
         ArqLogger.toConsole = toConsole;
 
