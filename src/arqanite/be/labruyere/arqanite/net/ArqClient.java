@@ -8,9 +8,13 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 
 public class ArqClient {
+    static {
+        timeout = 0;
+    }
+
     private static String host;
     private static int port;
-    private static int timeout = 1000;
+    private static int timeout;
 
     public static String getHost() {
         return host;

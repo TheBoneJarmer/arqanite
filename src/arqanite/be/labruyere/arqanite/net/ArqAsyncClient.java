@@ -9,10 +9,24 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
 public class ArqAsyncClient {
+    static {
+        timeout = 0;
+    }
+
     private static ClientThread thread;
+    private static int timeout;
+
+    public static int getTimeout() {
+        return timeout;
+    }
+
+    public static void setTimeout(int timeout) {
+        ArqAsyncClient.timeout = timeout;
+    }
 
     public static boolean isConnected() {
         if (thread == null) {
@@ -77,6 +91,7 @@ public class ArqAsyncClient {
             try {
                 socket = new Socket();
                 socket.setTcpNoDelay(true);
+                socket.setSoTimeout(timeout);
                 socket.connect(new InetSocketAddress(ip, port), 1000);
 
                 is = socket.getInputStream();
@@ -138,8 +153,22 @@ public class ArqAsyncClient {
                     data.append(new String(buffer, 0, read));
 
                     for (var message : parse()) {
-                        run(message.getAction(), message.getBody());
+                        var action = message.getAction();
+                        var body = message.getBody();
+
+                        // If the server initialized the closure of the connection the client should not receive an error but close connection gracefully
+                        if (action.equals("leave")) {
+                            reason = message.getBody();
+
+                            isConnected = false;
+                            break;
+                        }
+
+                        run(action, body);
                     }
+                } catch (SocketTimeoutException e) {
+                    reason = "Socket timeout";
+                    break;
                 } catch (SocketException e) {
                     if (!isTerminated) {
                         reason = "Connection lost";
@@ -153,18 +182,10 @@ public class ArqAsyncClient {
                 }
             }
 
-            if (!reason.isEmpty()) {
-                try {
-                    run("leave", reason);
-                } catch (ArqanoreException e) {
-                    ArqLogger.logError(e);
-                }
-            } else {
-                try {
-                    run("leave", "");
-                } catch (ArqanoreException e) {
-                    ArqLogger.logError(e);
-                }
+            try {
+                run("leave", reason);
+            } catch (ArqanoreException e) {
+                ArqLogger.logError(e);
             }
 
             try {

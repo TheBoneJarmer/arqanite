@@ -6,9 +6,7 @@ import be.labruyere.arqanore.exceptions.ArqanoreException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
@@ -17,10 +15,30 @@ import java.util.Random;
 public class ArqAsyncServer {
     static {
         random = new Random();
+        clientTimeout = 1000;
+        acceptTimeout = 1000;
     }
 
     private static Random random;
     private static ServerThread server;
+    private static int clientTimeout;
+    private static int acceptTimeout;
+
+    public static int getClientTimeout() {
+        return clientTimeout;
+    }
+
+    public static void setClientTimeout(int clientTimeout) {
+        ArqAsyncServer.clientTimeout = clientTimeout;
+    }
+
+    public static int getAcceptTimeout() {
+        return acceptTimeout;
+    }
+
+    public static void setAcceptTimeout(int acceptTimeout) {
+        ArqAsyncServer.acceptTimeout = acceptTimeout;
+    }
 
     public static boolean isRunning() {
         return server != null && server.isRunning;
@@ -65,6 +83,7 @@ public class ArqAsyncServer {
 
             try {
                 this.socket = new ServerSocket(port);
+                this.socket.setSoTimeout(acceptTimeout);
                 this.clients = new ServerClientThread[1000];
                 this.isRunning = true;
             } catch (Exception e) {
@@ -78,12 +97,12 @@ public class ArqAsyncServer {
 
         @Override
         public void run() {
-            ServerAcceptThread acceptThread = new ServerAcceptThread();
+            var acceptThread = new ServerAcceptThread();
             acceptThread.start();
 
             while (isRunning) {
                 try {
-                    for (int i = 0; i < clients.length; i++) {
+                    for (var i = 0; i < clients.length; i++) {
                         final var client = clients[i];
 
                         if (client == null) {
@@ -116,7 +135,7 @@ public class ArqAsyncServer {
                 }
 
                 try {
-                    client.disconnect();
+                    client.disconnect("Server shutdown");
                 } catch (Exception e) {
                     ArqLogger.logError("Failed to close server client connection", e);
                 }
@@ -157,10 +176,11 @@ public class ArqAsyncServer {
 
                     try {
                         var socket = server.socket.accept();
+                        socket.setSoTimeout(clientTimeout);
 
                         if (count == server.clients.length) {
                             var message = new ArqMessage();
-                            message.setAction("error");
+                            message.setAction("leave");
                             message.setBody("Server is full");
 
                             var os = socket.getOutputStream();
@@ -168,6 +188,8 @@ public class ArqAsyncServer {
 
                             os.close();
                             socket.close();
+
+                            ArqLogger.logWarning("Client could not connect because the server is full");
                             continue;
                         }
 
@@ -180,7 +202,8 @@ public class ArqAsyncServer {
                                 break;
                             }
                         }
-                    } catch (SocketException e) {
+                    } catch (SocketTimeoutException e) {
+                        ArqLogger.logError(e);
                         break;
                     } catch (Exception e) {
                         ArqLogger.logError("An error occurred during socket accept", e);
@@ -197,8 +220,9 @@ public class ArqAsyncServer {
             private final OutputStream os;
             private final StringBuilder data;
             private boolean isConnected;
-            private boolean isTerminated;
+            private boolean isDisconnected;
             private Object userData;
+            private String reason;
 
             public boolean isConnected() {
                 return isConnected;
@@ -208,37 +232,58 @@ public class ArqAsyncServer {
                 return clientId;
             }
 
+            /**
+             * Returns the custom user data object attached to this client thread
+             * @return The user data for this client
+             */
             public Object getUserData() {
                 return userData;
             }
 
+            /**
+             * Sets the custom user data object for this client
+             * @param userData The userdata object, can be anything.
+             */
             public void setUserData(Object userData) {
                 this.userData = userData;
             }
 
+            /**
+             * Returns the associated InetAddress object for the socket.
+             * @return The inet address of the socket
+             */
+            public InetAddress getInetAddress() {
+                return socket.getInetAddress();
+            }
+
+            /**
+             * Returns the associated <b>remote</b> socket address for the socket.
+             * @return The socket address of the socket
+             */
+            public SocketAddress getSocketAddress() {
+                return socket.getRemoteSocketAddress();
+            }
+
             public ServerClientThread(Socket socket) throws ArqanoreException {
-                this.clientId = random.nextInt(100000, 999999);
+                this.clientId = generateId();
                 this.socket = socket;
+                this.reason = "";
 
                 try {
-                    socket.setTcpNoDelay(true);
+                    socket.setTcpNoDelay(true); // Enable Nagle's algorithm
 
                     is = socket.getInputStream();
                     os = socket.getOutputStream();
                     isConnected = true;
                     data = new StringBuilder();
                 } catch (IOException e) {
-                    throw new ArqanoreException("Failed to init server client socket", e);
+                    throw new ArqanoreException("Failed to instantiate server client socket", e);
                 }
 
                 this.setName("arq_server_client" + this.clientId);
             }
 
             public void send(ArqMessage message) throws ArqanoreException {
-                if (!isConnected) {
-                    return;
-                }
-
                 try {
                     os.write(message.toBytes());
                 } catch (IOException e) {
@@ -254,17 +299,10 @@ public class ArqAsyncServer {
                 send(message);
             }
 
-            public void disconnect() {
-                isConnected = false;
-                isTerminated = true;
-
-                try {
-                    os.close();
-                    is.close();
-                    socket.close();
-                } catch (IOException e) {
-                    ArqLogger.logError("Failed to close connection", e);
-                }
+            public void disconnect(String reason) {
+                this.isConnected = false;
+                this.isDisconnected = true;
+                this.reason = reason;
             }
 
             @Override
@@ -281,7 +319,7 @@ public class ArqAsyncServer {
                 try {
                     run("join", Integer.toString(clientId));
                 } catch (ArqanoreException e) {
-                    ArqLogger.logError(null, e);
+                    ArqLogger.logError(e);
                     return;
                 }
 
@@ -290,7 +328,6 @@ public class ArqAsyncServer {
                         var read = is.read(buffer);
 
                         if (read == -1) {
-                            isTerminated = true;
                             isConnected = false;
                             continue;
                         }
@@ -300,33 +337,46 @@ public class ArqAsyncServer {
                         for (var message : parse()) {
                             run(message.getAction(), message.getBody());
                         }
+                    } catch (SocketTimeoutException e) {
+                        reason = "Socket timeout";
+                        break;
                     } catch (SocketException e) {
-                        isConnected = false;
+                        if (!isDisconnected) {
+                            reason = "Connection lost";
+                        }
+
+                        break;
                     } catch (Exception e) {
-                        ArqLogger.logError("[" + getClientId() + "] Unknown error", e);
-                        isConnected = false;
+                        ArqLogger.logError("[" + clientId + "] Unknown error", e);
+                        reason = "A server error occurred";
+                        break;
                     }
                 }
 
                 try {
-                    send("leave", Integer.toString(clientId));
+                    send("leave", reason);
                 } catch (ArqanoreException e) {
-                    ArqLogger.logError("Failed to send leave message", e);
+                    ArqLogger.logError("[" + clientId + "] Failed to send leave message", e);
                 }
 
                 try {
-                    run("leave", Integer.toString(clientId));
+                    run("leave", reason);
                 } catch (ArqanoreException e) {
                     ArqLogger.logError(null, e);
                 }
 
-                try {
-                    is.close();
-                    os.close();
-                    socket.close();
-                } catch (IOException e) {
-                    ArqLogger.logError("Failed to close client connection", e);
+                if (!isDisconnected) {
+                    try {
+                        is.close();
+                        os.close();
+                        socket.close();
+                    } catch (IOException e) {
+                        ArqLogger.logError("[" + clientId + "] Failed to close client connection", e);
+                    }
                 }
+
+                isConnected = false;
+                isDisconnected = true;
             }
 
             private void run(String command, String body) throws ArqanoreException {
@@ -358,6 +408,24 @@ public class ArqAsyncServer {
 
                     index1 = data.toString().indexOf(ArqMessage.PREFIX);
                     index2 = data.toString().indexOf(ArqMessage.SUFFIX);
+                }
+
+                return result;
+            }
+
+            private int generateId() {
+                var result = 0;
+
+                while (true) {
+                    var id = random.nextInt(100000, 999999);
+                    var existing = getClient(id);
+
+                    if (existing != null) {
+                        continue;
+                    }
+
+                    result = id;
+                    break;
                 }
 
                 return result;
