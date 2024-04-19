@@ -15,7 +15,7 @@ public class App {
         ArqLogger.init(false, true);
 
         try {
-            run();
+            //run();
             runAsync();
         } catch (Exception e) {
             ArqLogger.logError(e);
@@ -36,7 +36,7 @@ public class App {
     }
 
     private static void runAsync() throws ArqanoreException {
-        ArqAsyncServer.setAcceptTimeout(1000);
+        ArqAsyncServer.setAcceptTimeout(0);
         ArqAsyncServer.setClientTimeout(0);
         ArqAsyncServer.start(9090);
 

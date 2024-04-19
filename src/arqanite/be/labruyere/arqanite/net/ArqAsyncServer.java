@@ -222,7 +222,6 @@ public class ArqAsyncServer {
             private boolean isConnected;
             private boolean isDisconnected;
             private Object userData;
-            private String reason;
 
             public boolean isConnected() {
                 return isConnected;
@@ -267,7 +266,6 @@ public class ArqAsyncServer {
             public ServerClientThread(Socket socket) throws ArqanoreException {
                 this.clientId = generateId();
                 this.socket = socket;
-                this.reason = "";
 
                 try {
                     socket.setTcpNoDelay(true); // Enable Nagle's algorithm
@@ -299,15 +297,30 @@ public class ArqAsyncServer {
                 send(message);
             }
 
-            public void disconnect(String reason) {
-                this.isConnected = false;
-                this.isDisconnected = true;
-                this.reason = reason;
+            public void disconnect(String reason) throws ArqanoreException {
+                isConnected = false;
+                isDisconnected = true;
+
+                try {
+                    send("leave", reason);
+                    run("leave", reason);
+                } catch (Exception e) {
+                    ArqLogger.logError("Failed to run or send action 'leave' during manual disconnect", e);
+                }
+
+                try {
+                    is.close();
+                    os.close();
+                    socket.close();
+                } catch (IOException e) {
+                    ArqLogger.logError("[" + clientId + "] Failed to terminate client connection", e);
+                }
             }
 
             @Override
             public void run() {
                 var buffer = new byte[1024 * 10];
+                var reason = "";
 
                 try {
                     send("join", Integer.toString(clientId));
@@ -353,18 +366,22 @@ public class ArqAsyncServer {
                     }
                 }
 
-                try {
-                    send("leave", reason);
-                } catch (ArqanoreException e) {
-                    ArqLogger.logError("[" + clientId + "] Failed to send leave message", e);
+                // Only send these messages when the client was not disconnected manually
+                if (!isDisconnected) {
+                    try {
+                        send("leave", reason);
+                    } catch (ArqanoreException e) {
+                        ArqLogger.logError("[" + clientId + "] Failed to send leave message", e);
+                    }
+
+                    try {
+                        run("leave", reason);
+                    } catch (ArqanoreException e) {
+                        ArqLogger.logError(null, e);
+                    }
                 }
 
-                try {
-                    run("leave", reason);
-                } catch (ArqanoreException e) {
-                    ArqLogger.logError(null, e);
-                }
-
+                // Only close the streams and socket when the client was not disconnected manually
                 if (!isDisconnected) {
                     try {
                         is.close();
