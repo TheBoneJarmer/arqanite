@@ -15,8 +15,8 @@ import java.util.Random;
 public class ArqAsyncServer {
     static {
         random = new Random();
-        clientTimeout = 1000;
-        acceptTimeout = 1000;
+        clientTimeout = 0;
+        acceptTimeout = 0;
     }
 
     private static Random random;
