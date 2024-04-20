@@ -44,6 +44,14 @@ public class ArqAsyncServer {
         return server != null && server.isRunning;
     }
 
+    public static ServerThread.ServerClientThread[] getClients() {
+        if (server == null) {
+            return null;
+        }
+
+        return server.clients;
+    }
+
     public static ServerThread.ServerClientThread getClient(int id) {
         if (server == null) {
             return null;
