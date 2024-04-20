@@ -49,7 +49,10 @@ public class ArqAsyncServer {
             return null;
         }
 
-        return server.clients;
+        var stream = Arrays.stream(server.clients);
+        stream = stream.filter(Objects::nonNull);
+
+        return stream.toArray(ServerClientThread[]::new);
     }
 
     public static ServerClientThread getClient(int id) {
