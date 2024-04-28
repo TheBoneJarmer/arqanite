@@ -18,7 +18,7 @@ public class App {
 
             ArqScreens.addScreen("Main", new ScreenMain());
             ArqScreens.navigate("Main", null);
-        } catch (ArqanoreException e) {
+        } catch (Exception e) {
             ArqLogger.logError(e);
             window.close();
         }
@@ -31,7 +31,7 @@ public class App {
     private static void onTick(double dt) {
         try {
             ArqScreens.tick(window, dt);
-        } catch (ArqanoreException e) {
+        } catch (Exception e) {
             ArqLogger.logError(e);
             window.close();
         }
@@ -42,7 +42,7 @@ public class App {
             ArqScreens.update(window, at);
             ArqMusic.update();
             ArqInput.update();
-        } catch (ArqanoreException e) {
+        } catch (Exception e) {
             ArqLogger.logError(e);
             window.close();
         }
@@ -51,7 +51,7 @@ public class App {
     private static void onRender2D() {
         try {
             ArqScreens.render2D(window);
-        } catch (ArqanoreException e) {
+        } catch (Exception e) {
             ArqLogger.logError(e);
             window.close();
         }
@@ -60,7 +60,7 @@ public class App {
     private static void onRender3D() {
         try {
             ArqScreens.render3D(window);
-        } catch (ArqanoreException e) {
+        } catch (Exception e) {
             ArqLogger.logError(e);
             window.close();
         }
@@ -69,7 +69,7 @@ public class App {
     private static void onChar(int codePoint) {
         try {
             ArqScreens.input(window, (char) codePoint);
-        } catch (ArqanoreException e) {
+        } catch (Exception e) {
             ArqLogger.logError(e);
             window.close();
         }
