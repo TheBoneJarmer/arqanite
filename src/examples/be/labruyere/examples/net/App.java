@@ -36,7 +36,7 @@ public class App {
     }
 
     private static void runAsync() throws ArqanoreException {
-        ArqAsyncServer.setAcceptTimeout(0);
+        ArqAsyncServer.setAcceptTimeout(1000);
         ArqAsyncServer.setClientTimeout(0);
         ArqAsyncServer.start(9090);
 

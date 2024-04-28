@@ -62,9 +62,9 @@ public class ScreenMain implements IScreen {
 
     @Override
     public void render2D(Window window) throws ArqanoreException {
-        Renderer.renderText(window, Assets.font, "Axis X: " + angles.x, 32, 32, 255, 255, 255, 255);
-        Renderer.renderText(window, Assets.font, "Axis Y: " + angles.y, 32, 64, 255, 255, 255, 255);
-        Renderer.renderText(window, Assets.font, "Axis Z: " + angles.z, 32, 96, 255, 255, 255, 255);
+        Renderer.renderText(window, Assets.font, "Axis X: " + angles.x, 32, 32, 1, 1, 255, 255, 255, 255);
+        Renderer.renderText(window, Assets.font, "Axis Y: " + angles.y, 32, 64, 1, 1, 255, 255, 255, 255);
+        Renderer.renderText(window, Assets.font, "Axis Z: " + angles.z, 32, 96, 1, 1, 255, 255, 255, 255);
     }
 
     @Override

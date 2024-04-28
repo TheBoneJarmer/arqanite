@@ -19,7 +19,7 @@ public class ArqAsyncServer {
         acceptTimeout = 0;
     }
 
-    private static Random random;
+    private static final Random random;
     private static ServerThread server;
     private static int clientTimeout;
     private static int acceptTimeout;
@@ -343,7 +343,7 @@ public class ArqAsyncServer {
 
             try {
                 run("join", Integer.toString(clientId));
-            } catch (ArqanoreException e) {
+            } catch (Exception e) {
                 ArqLogger.logError(e);
                 return;
             }
@@ -372,7 +372,7 @@ public class ArqAsyncServer {
 
                     break;
                 } catch (Exception e) {
-                    ArqLogger.logError("[" + clientId + "] Unknown error", e);
+                    ArqLogger.logError("[" + clientId + "] Exception", e);
                     reason = "A server error occurred";
                     break;
                 }
@@ -388,8 +388,8 @@ public class ArqAsyncServer {
 
                 try {
                     run("leave", reason);
-                } catch (ArqanoreException e) {
-                    ArqLogger.logError(null, e);
+                } catch (Exception e) {
+                    ArqLogger.logError(e);
                 }
             }
 
@@ -408,7 +408,7 @@ public class ArqAsyncServer {
             isDisconnected = true;
         }
 
-        private void run(String command, String body) throws ArqanoreException {
+        private void run(String command, String body) throws Exception {
             var action = ArqActions.get(command);
 
             if (action != null) {
