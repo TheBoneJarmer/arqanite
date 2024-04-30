@@ -35,12 +35,20 @@ public class App {
         ArqServer.stop();
     }
 
-    private static void runAsync() throws ArqanoreException {
-        ArqAsyncServer.setAcceptTimeout(1000);
+    private static void runAsync() throws ArqanoreException, InterruptedException {
+        ArqAsyncServer.setAcceptTimeout(0);
         ArqAsyncServer.setClientTimeout(0);
         ArqAsyncServer.start(9090);
 
-        ArqAsyncClient.setTimeout(0);
-        ArqAsyncClient.connect("localhost", 9090);
+        while (true) {
+            if (ArqAsyncClient.isConnected()) {
+                continue;
+            }
+
+            ArqAsyncClient.setTimeout(0);
+            ArqAsyncClient.connect("localhost", 9090);
+
+            Thread.sleep(100);
+        }
     }
 }

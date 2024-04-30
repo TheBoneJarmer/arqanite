@@ -12,7 +12,8 @@ public class ActJoin extends ArqAction {
 
     @Override
     public void runAsync(String body) throws ArqanoreException {
-        ArqAsyncClient.send("ping", "test");
+        ArqLogger.logInfo("[CLIENT] ping");
+        ArqAsyncClient.send("ping", "");
     }
 
     @Override

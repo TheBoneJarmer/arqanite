@@ -15,7 +15,8 @@ public class ActPing extends ArqAction {
 
     @Override
     public void runAsync(String body) throws ArqanoreException {
-        System.out.println("[CLIENT2] " + body);
+        ArqLogger.logInfo("[CLIENT] " + body);
+        ArqAsyncClient.disconnect();
     }
 
     @Override
@@ -26,11 +27,7 @@ public class ActPing extends ArqAction {
             return;
         }
 
-        if (body == null) {
-            client.send("ping", "pong");
-        } else {
-            client.disconnect("No input required");
-        }
+        client.send("ping", "pong");
     }
 
     @Override
