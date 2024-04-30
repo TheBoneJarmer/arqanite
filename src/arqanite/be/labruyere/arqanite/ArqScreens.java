@@ -50,7 +50,7 @@ public class ArqScreens {
         return (T)screens.get(next.screen);
     }
 
-    public static void addScreen(String key, IScreen screen) throws ArqanoreException {
+    public static void addScreen(String key, IScreen screen) throws Exception {
         if (screens.containsKey(key)) {
             throw new ArqanoreException("A screen with key " + key + " has already been added");
         }
@@ -58,13 +58,13 @@ public class ArqScreens {
         screens.put(key, screen);
     }
 
-    public static void tick(Window window, double dt) throws ArqanoreException {
+    public static void tick(Window window, double dt) throws Exception {
         if (current != null) {
             screens.get(current.screen).tick(window, dt);
         }
     }
 
-    public static void update(Window window, double at) throws ArqanoreException {
+    public static void update(Window window, double at) throws Exception {
         if (next != null) {
             history.add(current);
             current = next;
@@ -78,19 +78,19 @@ public class ArqScreens {
         }
     }
 
-    public static void render2D(Window window) throws ArqanoreException {
+    public static void render2D(Window window) throws Exception {
         if (current != null) {
             screens.get(current.screen).render2D(window);
         }
     }
 
-    public static void render3D(Window window) throws ArqanoreException {
+    public static void render3D(Window window) throws Exception {
         if (current != null) {
             screens.get(current.screen).render3D(window);
         }
     }
 
-    public static void input(Window window, char c) throws ArqanoreException {
+    public static void input(Window window, char c) throws Exception {
         if (current != null) {
             screens.get(current.screen).input(window, c);
         }

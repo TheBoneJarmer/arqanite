@@ -15,15 +15,15 @@ public abstract class ArqAction {
         this.command = command;
     }
 
-    public void runAsync(int clientId, String body) throws ArqanoreException {
+    public void runAsync(int clientId, String body) throws Exception {
 
     }
 
-    public void runAsync(String body) throws ArqanoreException{
+    public void runAsync(String body) throws Exception {
 
     }
 
-    public String run(String body) {
+    public String run(String body) throws Exception {
         return null;
     }
 }

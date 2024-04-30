@@ -176,7 +176,7 @@ public class ArqAsyncClient {
 
                     break;
                 } catch (Exception e) {
-                    ArqLogger.logError("An unknown error occurred", e);
+                    ArqLogger.logError(e);
                     reason = "A client error occurred";
                     break;
                 }
@@ -184,7 +184,7 @@ public class ArqAsyncClient {
 
             try {
                 run("leave", reason);
-            } catch (ArqanoreException e) {
+            } catch (Exception e) {
                 ArqLogger.logError(e);
             }
 
@@ -200,7 +200,7 @@ public class ArqAsyncClient {
             thread = null;
         }
 
-        private void run(String command, String body) throws ArqanoreException {
+        private void run(String command, String body) throws Exception {
             var action = ArqActions.get(command);
 
             if (action != null) {

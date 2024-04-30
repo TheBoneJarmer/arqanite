@@ -133,7 +133,7 @@ public class ArqServer {
             return msg;
         }
 
-        private String run(ArqMessage msg) throws ArqanoreException {
+        private String run(ArqMessage msg) throws Exception {
             var action = ArqActions.get(msg.getAction());
 
             if (action == null) {

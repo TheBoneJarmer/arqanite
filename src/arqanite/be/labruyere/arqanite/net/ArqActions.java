@@ -1,7 +1,5 @@
 package be.labruyere.arqanite.net;
 
-import be.labruyere.arqanite.net.ArqAction;
-
 import java.util.ArrayList;
 
 public class ArqActions {
