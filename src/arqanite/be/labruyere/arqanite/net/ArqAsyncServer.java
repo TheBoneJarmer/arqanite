@@ -120,7 +120,7 @@ public class ArqAsyncServer {
                             continue;
                         }
 
-                        if (!client.isConnected()) {
+                        if (!client.isAlive()) {
                             clients[i] = null;
                         }
                     }
