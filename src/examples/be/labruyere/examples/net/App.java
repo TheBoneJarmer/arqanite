@@ -45,7 +45,7 @@ public class App {
                 continue;
             }
 
-            ArqAsyncClient.setTimeout(0);
+            ArqAsyncClient.setSoTimeout(0);
             ArqAsyncClient.connect("localhost", 9090);
 
             Thread.sleep(100);

@@ -14,18 +14,28 @@ import java.util.ArrayList;
 
 public class ArqAsyncClient {
     static {
-        timeout = 0;
+        soTimeout = 0;
+        connectTimeout = 1000;
     }
 
     private static ClientThread thread;
-    private static int timeout;
+    private static int soTimeout;
+    private static int connectTimeout;
 
-    public static int getTimeout() {
-        return timeout;
+    public static int getSoTimeout() {
+        return soTimeout;
     }
 
-    public static void setTimeout(int timeout) {
-        ArqAsyncClient.timeout = timeout;
+    public static void setSoTimeout(int soTimeout) {
+        ArqAsyncClient.soTimeout = soTimeout;
+    }
+
+    public static int getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public static void setConnectTimeout(int connectTimeout) {
+        ArqAsyncClient.connectTimeout = connectTimeout;
     }
 
     public static boolean isConnected() {
@@ -91,8 +101,8 @@ public class ArqAsyncClient {
             try {
                 socket = new Socket();
                 socket.setTcpNoDelay(true);
-                socket.setSoTimeout(timeout);
-                socket.connect(new InetSocketAddress(ip, port), 1000 * 60 * 3);
+                socket.setSoTimeout(soTimeout);
+                socket.connect(new InetSocketAddress(ip, port), connectTimeout);
 
                 is = socket.getInputStream();
                 os = socket.getOutputStream();
