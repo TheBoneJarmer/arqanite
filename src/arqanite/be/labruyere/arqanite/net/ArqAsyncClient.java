@@ -92,7 +92,7 @@ public class ArqAsyncClient {
                 socket = new Socket();
                 socket.setTcpNoDelay(true);
                 socket.setSoTimeout(timeout);
-                socket.connect(new InetSocketAddress(ip, port), 1000);
+                socket.connect(new InetSocketAddress(ip, port), 1000 * 60 * 3);
 
                 is = socket.getInputStream();
                 os = socket.getOutputStream();
