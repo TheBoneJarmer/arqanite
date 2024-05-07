@@ -15,8 +15,8 @@ public class App {
         ArqLogger.init(false, true);
 
         try {
-            //run();
-            runAsync();
+            run();
+            //runAsync();
         } catch (Exception e) {
             ArqLogger.logError(e);
         }
@@ -25,14 +25,6 @@ public class App {
     private static void run() throws ArqanoreException {
         ArqServer.setAcceptTimeout(0);
         ArqServer.start(9091);
-
-        ArqClient.setHost("localhost");
-        ArqClient.setPort(9091);
-
-        var res = ArqClient.send("ping", "");
-        ArqLogger.logInfo("[CLIENT1] " + res);
-
-        ArqServer.stop();
     }
 
     private static void runAsync() throws ArqanoreException, InterruptedException {
