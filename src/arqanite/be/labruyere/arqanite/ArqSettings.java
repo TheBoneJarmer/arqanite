@@ -41,7 +41,7 @@ public class ArqSettings {
             return false;
         }
 
-        return !value.equals("1");
+        return value.equals("1");
     }
 
     public static Keys getKey(String key) {
