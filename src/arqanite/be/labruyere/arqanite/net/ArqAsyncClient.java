@@ -45,9 +45,10 @@ public class ArqAsyncClient {
 
     /**
      * Returns the associated InetAddress object for the client socket.
+     *
      * @return The inet address of the socket
      */
-    public InetAddress getInetAddress() {
+    public static InetAddress getInetAddress() {
         if (thread == null) {
             return null;
         }
@@ -57,9 +58,10 @@ public class ArqAsyncClient {
 
     /**
      * Returns the associated <b>remote</b> socket address for the client socket.
+     *
      * @return The socket address of the socket
      */
-    public SocketAddress getSocketAddress() {
+    public static SocketAddress getSocketAddress() {
         if (thread == null) {
             return null;
         }
