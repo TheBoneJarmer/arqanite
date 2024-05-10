@@ -6,10 +6,7 @@ import be.labruyere.arqanore.exceptions.ArqanoreException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.util.ArrayList;
 
 public class ArqAsyncClient {
@@ -44,6 +41,30 @@ public class ArqAsyncClient {
         }
 
         return thread.isConnected();
+    }
+
+    /**
+     * Returns the associated InetAddress object for the client socket.
+     * @return The inet address of the socket
+     */
+    public InetAddress getInetAddress() {
+        if (thread == null) {
+            return null;
+        }
+
+        return thread.socket.getInetAddress();
+    }
+
+    /**
+     * Returns the associated <b>remote</b> socket address for the client socket.
+     * @return The socket address of the socket
+     */
+    public SocketAddress getSocketAddress() {
+        if (thread == null) {
+            return null;
+        }
+
+        return thread.socket.getRemoteSocketAddress();
     }
 
     public static void connect(String ip, int port) throws ArqanoreException {
