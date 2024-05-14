@@ -10,9 +10,45 @@ import java.util.HashMap;
 public class ArqInput {
     static {
         states = new HashMap<>();
+        joystickDisabled = new boolean[15];
     }
 
-    private static HashMap<String, State> states;
+    private static final HashMap<String, State> states;
+    private static final boolean[] joystickDisabled;
+    private static boolean keyboardDisabled;
+    private static int joystickId;
+
+    public static int getJoystickId() {
+        return joystickId;
+    }
+
+    public static void setJoystickId(int joystickId) {
+        ArqInput.joystickId = joystickId;
+    }
+
+    public static boolean isJoystickEnabled() {
+        return !joystickDisabled[joystickId];
+    }
+
+    public static boolean isJoystickConnected() throws ArqanoreException {
+        return Joystick.isConnected(joystickId);
+    }
+
+    public static void enableJoystick(int jid) {
+        joystickDisabled[jid] = false;
+    }
+
+    public static void disableJoystick(int jid) {
+        joystickDisabled[jid] = true;
+    }
+
+    public static void enableKeyboard() {
+        keyboardDisabled = false;
+    }
+
+    public static void disableKeyboard() {
+        keyboardDisabled = true;
+    }
 
     public static void map(String name, Keys key, String joystick) {
         mapKey(name, key);
@@ -59,10 +95,11 @@ public class ArqInput {
     public static void update() throws ArqanoreException {
         for (var set : states.entrySet()) {
             var state = set.getValue();
+            var value = state.value;
             var keyboard = state.keyboard;
             var joystick = state.joystick;
 
-            state.value = updateState(state.keyboard, state.joystick, state.value);
+            state.value = updateState(keyboard, joystick, value);
         }
     }
 
@@ -72,8 +109,13 @@ public class ArqInput {
         var keyboard = false;
         var joystick = false;
 
-        keyboard = Keyboard.keyDown(Keys.valueOf(key));
-        joystick = joystickState(stick);
+        if (!keyboardDisabled) {
+            keyboard = Keyboard.keyDown(Keys.valueOf(key));
+        }
+
+        if (!joystickDisabled[joystickId]) {
+            joystick = joystickState(stick);
+        }
 
         down = keyboard || joystick;
 
@@ -93,7 +135,7 @@ public class ArqInput {
             return false;
         }
 
-        if (!Joystick.isConnected(0)) {
+        if (!Joystick.isConnected(joystickId)) {
             return false;
         }
 
