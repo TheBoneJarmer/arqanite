@@ -11,10 +11,12 @@ public class ArqInput {
     static {
         states = new HashMap<>();
         joystickDisabled = new boolean[15];
+        joystickConnected = new boolean[15];
     }
 
     private static final HashMap<String, State> states;
     private static final boolean[] joystickDisabled;
+    private static final boolean[] joystickConnected;
     private static boolean keyboardDisabled;
     private static int joystickId;
 
@@ -31,15 +33,19 @@ public class ArqInput {
     }
 
     public static boolean isJoystickConnected() throws ArqanoreException {
-        return Joystick.isConnected(joystickId);
+        return joystickConnected[joystickId];
     }
 
-    public static void enableJoystick(int jid) {
-        joystickDisabled[jid] = false;
+    public static boolean isKeyboardDisabled() {
+        return keyboardDisabled;
     }
 
-    public static void disableJoystick(int jid) {
-        joystickDisabled[jid] = true;
+    public static void enableJoystick() {
+        joystickDisabled[joystickId] = false;
+    }
+
+    public static void disableJoystick() {
+        joystickDisabled[joystickId] = true;
     }
 
     public static void enableKeyboard() {
@@ -100,6 +106,18 @@ public class ArqInput {
             var joystick = state.joystick;
 
             state.value = updateState(keyboard, joystick, value);
+        }
+
+        for (var i=0; i<15; i++) {
+            if (Joystick.isConnected(i) && !joystickConnected[i]) {
+                ArqLogger.logInfo("Joystick " + i + " connected");
+                joystickConnected[i] = true;
+            }
+
+            if (!Joystick.isConnected(i) && joystickConnected[i]) {
+                ArqLogger.logInfo("Joystick " + i + " disconnected");
+                joystickConnected[i] = false;
+            }
         }
     }
 
