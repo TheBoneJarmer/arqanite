@@ -110,6 +110,7 @@ public class ArqServer {
                     break;
                 } catch (Exception e) {
                     ArqLogger.logError(e);
+                    break;
                 }
             }
 
