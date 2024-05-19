@@ -91,17 +91,8 @@ public class ArqServer {
                     var socket = listener.accept();
                     socket.setSoTimeout(clientTimeout);
 
-                    var bytes = read(socket);
-
-                    if (bytes == null) {
-                        continue;
-                    }
-
-                    var msg = parse(bytes);
-                    var res = run(msg);
-                    write(socket, res.getBytes());
-
-                    socket.close();
+                    var thread = new ServerClientThread(socket);
+                    thread.start();
                 } catch (SocketException e) {
                     if (!isDisconnected) {
                         ArqLogger.logError(e);
@@ -125,6 +116,33 @@ public class ArqServer {
             isConnected = false;
             isDisconnected = true;
         }
+    }
+
+    private static class ServerClientThread extends Thread {
+        private final Socket socket;
+
+        public ServerClientThread(Socket socket) {
+            this.socket = socket;
+        }
+
+        @Override
+        public void run() {
+            try {
+                var bytes = read(socket);
+
+                if (bytes == null) {
+                    return;
+                }
+
+                var msg = parse(bytes);
+                var res = run(msg);
+                write(socket, res.getBytes());
+
+                socket.close();
+            } catch (Exception e) {
+                ArqLogger.logError(e);
+            }
+        }
 
         private ArqMessage parse(byte[] data) throws ArqanoreException {
             var msg = new ArqMessage();
@@ -137,14 +155,13 @@ public class ArqServer {
             var action = ArqActions.get(msg.getAction());
 
             if (action == null) {
-                ArqLogger.logError("Action " + msg.getAction() + " not found");
-                return "";
+                return "Action " + msg.getAction() + " not found";
             }
 
             var res = action.run(msg.getBody());
 
             if (res == null) {
-                return "";
+                return "null";
             }
 
             return res;
