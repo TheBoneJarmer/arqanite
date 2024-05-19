@@ -175,13 +175,23 @@ public class ArqAsyncServer {
                 int count = 0;
 
                 for (int i = 0; i < server.clients.length; i++) {
-                    final ServerClientThread client = server.clients[i];
+                    var client = server.clients[i];
 
                     if (client == null) {
                         continue;
                     }
 
-                    if (server.clients[i].isConnected()) {
+                    if (!client.isAlive() && client.isConnected) {
+                        ArqLogger.logWarning("Client " + client.getClientId() + " is connected but the thread has stopped.");
+
+                        try {
+                            client.disconnect("Server thread failure");
+                        } catch (ArqanoreException e) {
+                            ArqLogger.logError("Failed to disconnect client " + client.getClientId(), e);
+                        }
+                    }
+
+                    if (client.isConnected()) {
                         count++;
                     }
                 }
