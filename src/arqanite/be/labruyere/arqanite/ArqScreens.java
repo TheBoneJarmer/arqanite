@@ -34,20 +34,30 @@ public class ArqScreens {
         return next.screen;
     }
 
-    public static <T extends IScreen> T getCurrentScreen() {
+    public static IScreen getCurrentScreen() {
         if (current == null) {
             return null;
         }
 
-        return (T)screens.get(current.screen);
+        return screens.get(current.screen);
     }
 
-    public static <T extends IScreen> T getScreenNext() {
+    public static IScreen getScreenNext() {
         if (next == null) {
             return null;
         }
 
-        return (T)screens.get(next.screen);
+        return screens.get(next.screen);
+    }
+
+    public static <T extends IScreen> T getScreen(String name, Class<T> cls) {
+        var entry = screens.get(name);
+
+        if (entry == null) {
+            return null;
+        }
+
+        return cls.cast(entry);
     }
 
     public static void addScreen(String key, IScreen screen) throws Exception {
