@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -99,11 +101,15 @@ public class ArqSettings {
 
     public static void save() throws IOException {
         var writer = new FileWriter("settings.txt");
+        var keys = new ArrayList<>(settings.keySet());
 
-        for (var key : settings.keySet()) {
+        // Sort the keys alphabetically because else the whole file is a mess
+        Collections.sort(keys);
+
+        for (var key : keys) {
             var value = getString(key);
 
-            if (value == null || value.length() == 0) {
+            if (value == null || value.isEmpty()) {
                 continue;
             }
 
