@@ -115,9 +115,9 @@ public class ArqMusic {
 
         // Start playing the new song on silent
         if (step == 1) {
+            nextSong.play();
             nextSong.setLooping(true);
             nextSong.setVolume(0);
-            nextSong.play();
 
             step = 2;
             return;
