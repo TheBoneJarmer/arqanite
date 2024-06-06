@@ -8,39 +8,39 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 
 public class ArqClient {
-    static {
+    {
         timeout = 0;
     }
 
-    private static String host;
-    private static int port;
-    private static int timeout;
+    private String host;
+    private int port;
+    private int timeout;
 
-    public static String getHost() {
+    public String getHost() {
         return host;
     }
 
-    public static void setHost(String host) {
-        ArqClient.host = host;
+    public void setHost(String host) {
+        this.host = host;
     }
 
-    public static int getPort() {
+    public int getPort() {
         return port;
     }
 
-    public static void setPort(int port) {
-        ArqClient.port = port;
+    public void setPort(int port) {
+        this.port = port;
     }
 
-    public static int getTimeout() {
+    public int getTimeout() {
         return timeout;
     }
 
-    public static void setTimeout(int timeout) {
-        ArqClient.timeout = timeout;
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
     }
 
-    public static String send(String action, String body) throws ArqanoreException {
+    public String send(String action, String body) throws ArqanoreException {
         var buffer = new byte[1024 * 10];
         var sb = new StringBuilder();
         var eof = false;

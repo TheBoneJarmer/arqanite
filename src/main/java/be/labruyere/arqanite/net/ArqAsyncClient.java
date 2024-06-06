@@ -9,32 +9,27 @@ import java.net.*;
 import java.util.ArrayList;
 
 public class ArqAsyncClient {
-    static {
-        soTimeout = 0;
-        connectTimeout = 1000;
-    }
+    private ClientThread thread;
+    private int soTimeout;
+    private int connectTimeout = 1000;
 
-    private static ClientThread thread;
-    private static int soTimeout;
-    private static int connectTimeout;
-
-    public static int getSoTimeout() {
+    public int getSoTimeout() {
         return soTimeout;
     }
 
-    public static void setSoTimeout(int soTimeout) {
-        ArqAsyncClient.soTimeout = soTimeout;
+    public void setSoTimeout(int soTimeout) {
+        this.soTimeout = soTimeout;
     }
 
-    public static int getConnectTimeout() {
+    public int getConnectTimeout() {
         return connectTimeout;
     }
 
-    public static void setConnectTimeout(int connectTimeout) {
-        ArqAsyncClient.connectTimeout = connectTimeout;
+    public void setConnectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
     }
 
-    public static boolean isConnected() {
+    public boolean isConnected() {
         if (thread == null) {
             return false;
         }
@@ -47,7 +42,7 @@ public class ArqAsyncClient {
      *
      * @return The inet address of the socket
      */
-    public static InetAddress getInetAddress() {
+    public InetAddress getInetAddress() {
         if (thread == null) {
             return null;
         }
@@ -60,7 +55,7 @@ public class ArqAsyncClient {
      *
      * @return The socket address of the socket
      */
-    public static SocketAddress getSocketAddress() {
+    public SocketAddress getSocketAddress() {
         if (thread == null) {
             return null;
         }
@@ -68,12 +63,12 @@ public class ArqAsyncClient {
         return thread.socket.getRemoteSocketAddress();
     }
 
-    public static void connect(String ip, int port) throws ArqanoreException {
+    public void connect(String ip, int port) throws ArqanoreException {
         thread = new ClientThread(ip, port);
         thread.start();
     }
 
-    public static void disconnect() throws ArqanoreException {
+    public void disconnect() throws ArqanoreException {
         if (thread == null) {
             return;
         }
@@ -81,7 +76,7 @@ public class ArqAsyncClient {
         thread.disconnect();
     }
 
-    public static void send(ArqMessage message) throws ArqanoreException {
+    public void send(ArqMessage message) throws ArqanoreException {
         if (thread == null) {
             return;
         }
@@ -93,7 +88,7 @@ public class ArqAsyncClient {
         }
     }
 
-    public static void send(String command, String body) throws ArqanoreException {
+    public void send(String command, String body) throws ArqanoreException {
         if (thread == null) {
             return;
         }
@@ -105,7 +100,7 @@ public class ArqAsyncClient {
         }
     }
 
-    private static class ClientThread extends Thread {
+    private class ClientThread extends Thread {
         private final Socket socket;
         private final InputStream is;
         private final OutputStream os;

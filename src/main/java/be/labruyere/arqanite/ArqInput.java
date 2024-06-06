@@ -91,7 +91,7 @@ public class ArqInput {
         var state = states.get(name);
 
         if (state == null) {
-            ArqLogger.logError("Input state " + name + " not found");
+            //ArqLogger.logError("Input state " + name + " not found");
             return false;
         }
 
@@ -110,12 +110,12 @@ public class ArqInput {
 
         for (var i=0; i<15; i++) {
             if (Joystick.isConnected(i) && !joystickConnected[i]) {
-                ArqLogger.logInfo("Joystick " + i + " connected");
+                //ArqLogger.logInfo("Joystick " + i + " connected");
                 joystickConnected[i] = true;
             }
 
             if (!Joystick.isConnected(i) && joystickConnected[i]) {
-                ArqLogger.logInfo("Joystick " + i + " disconnected");
+                //ArqLogger.logInfo("Joystick " + i + " disconnected");
                 joystickConnected[i] = false;
             }
         }
@@ -174,7 +174,7 @@ public class ArqInput {
                 return buttons[index] == 1;
             }
         } catch (Exception e) {
-            ArqLogger.logError("An error occurred while retrieving the joystick state", e);
+            //ArqLogger.logError("An error occurred while retrieving the joystick state", e);
             return false;
         }
 

@@ -12,38 +12,36 @@ import java.util.Objects;
 import java.util.Random;
 
 public class ArqAsyncServer {
-    static {
-        random = new Random();
-        clientTimeout = 0;
-        acceptTimeout = 0;
-    }
+    private final Random random;
+    private ServerThread server;
+    private int clientTimeout;
+    private int acceptTimeout;
 
-    private static final Random random;
-    private static ServerThread server;
-    private static int clientTimeout;
-    private static int acceptTimeout;
-
-    public static int getClientTimeout() {
+    public int getClientTimeout() {
         return clientTimeout;
     }
 
-    public static void setClientTimeout(int clientTimeout) {
-        ArqAsyncServer.clientTimeout = clientTimeout;
+    public void setClientTimeout(int clientTimeout) {
+        this.clientTimeout = clientTimeout;
     }
 
-    public static int getAcceptTimeout() {
+    public int getAcceptTimeout() {
         return acceptTimeout;
     }
 
-    public static void setAcceptTimeout(int acceptTimeout) {
-        ArqAsyncServer.acceptTimeout = acceptTimeout;
+    public void setAcceptTimeout(int acceptTimeout) {
+        this.acceptTimeout = acceptTimeout;
     }
 
-    public static boolean isRunning() {
+    public ArqAsyncServer() {
+        random = new Random();
+    }
+
+    public boolean isRunning() {
         return server != null && server.isRunning;
     }
 
-    public static ServerClientThread[] getClients() {
+    public ServerClientThread[] getClients() {
         if (server == null) {
             return null;
         }
@@ -54,7 +52,7 @@ public class ArqAsyncServer {
         return stream.toArray(ServerClientThread[]::new);
     }
 
-    public static ServerClientThread getClient(int id) {
+    public ServerClientThread getClient(int id) {
         if (server == null) {
             return null;
         }
@@ -66,7 +64,7 @@ public class ArqAsyncServer {
         return stream.findFirst().orElse(null);
     }
 
-    public static void start(int port) throws ArqanoreException {
+    public void start(int port) throws ArqanoreException {
         if (server != null && server.isAlive()) {
             return;
         }
@@ -75,7 +73,7 @@ public class ArqAsyncServer {
         server.start();
     }
 
-    public static void stop() {
+    public void stop() {
         if (server == null || !server.isAlive()) {
             return;
         }
@@ -83,7 +81,7 @@ public class ArqAsyncServer {
         server.close();
     }
 
-    private static class ServerThread extends Thread {
+    private class ServerThread extends Thread {
         public final ServerSocket socket;
         public final ServerClientThread[] clients;
         public boolean isRunning;
@@ -161,7 +159,7 @@ public class ArqAsyncServer {
         }
     }
 
-    private static class ServerAcceptThread extends Thread {
+    private class ServerAcceptThread extends Thread {
 
         public ServerAcceptThread() {
             super("arq_server_accept");
@@ -205,7 +203,7 @@ public class ArqAsyncServer {
             }
         }
 
-        private static int getCount() {
+        private int getCount() {
             var count = 0;
 
             for (var i = 0; i < server.clients.length; i++) {
@@ -224,7 +222,7 @@ public class ArqAsyncServer {
         }
     }
 
-    public static class ServerClientThread extends Thread {
+    public class ServerClientThread extends Thread {
         private final int clientId;
         private final Socket socket;
         private final InputStream is;

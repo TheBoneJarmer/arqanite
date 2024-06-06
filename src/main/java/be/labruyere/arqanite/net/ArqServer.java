@@ -7,36 +7,31 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class ArqServer {
-    static {
-        acceptTimeout = 0;
-        clientTimeout = 0;
-    }
+    private ServerThread server;
+    private int acceptTimeout;
+    private int clientTimeout;
 
-    private static ServerThread server;
-    private static int acceptTimeout;
-    private static int clientTimeout;
-
-    public static boolean isRunning() {
+    public boolean isRunning() {
         return server != null && server.isConnected;
     }
 
-    public static int getAcceptTimeout() {
+    public int getAcceptTimeout() {
         return acceptTimeout;
     }
 
-    public static int getClientTimeout() {
+    public int getClientTimeout() {
         return clientTimeout;
     }
 
-    public static void setClientTimeout(int clientTimeout) {
-        ArqServer.clientTimeout = clientTimeout;
+    public void setClientTimeout(int clientTimeout) {
+        this.clientTimeout = clientTimeout;
     }
 
-    public static void setAcceptTimeout(int acceptTimeout) {
-        ArqServer.acceptTimeout = acceptTimeout;
+    public void setAcceptTimeout(int acceptTimeout) {
+        this.acceptTimeout = acceptTimeout;
     }
 
-    public static void start(int port) throws ArqanoreException {
+    public void start(int port) throws ArqanoreException {
         if (server != null && server.isAlive()) {
             return;
         }
@@ -45,7 +40,7 @@ public class ArqServer {
         server.start();
     }
 
-    public static void stop() throws ArqanoreException {
+    public void stop() throws ArqanoreException {
         if (server == null || !server.isAlive()) {
             return;
         }
@@ -53,7 +48,7 @@ public class ArqServer {
         server.close();
     }
 
-    private static class ServerThread extends Thread {
+    private class ServerThread extends Thread {
         public final ServerSocket listener;
         public boolean isConnected;
         public boolean isDisconnected;
@@ -78,7 +73,7 @@ public class ArqServer {
             try {
                 listener.close();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new ArqanoreException(e);
             }
         }
 
