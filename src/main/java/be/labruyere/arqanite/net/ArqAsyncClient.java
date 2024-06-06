@@ -1,6 +1,5 @@
 package be.labruyere.arqanite.net;
 
-import be.labruyere.arqanite.ArqLogger;
 import be.labruyere.arqanore.exceptions.ArqanoreException;
 
 import java.io.IOException;
@@ -190,7 +189,7 @@ public class ArqAsyncClient {
                         var body = message.getBody();
 
                         // If the server initialized the closure of the connection the client should not receive an error but close connection gracefully
-                        if (action.equals("leave")) {
+                        if (action.equals("_close")) {
                             reason = message.getBody();
 
                             isConnected = false;
@@ -209,16 +208,15 @@ public class ArqAsyncClient {
 
                     break;
                 } catch (Exception e) {
-                    ArqLogger.logError(e);
                     reason = "A client error occurred";
                     break;
                 }
             }
 
             try {
-                run("leave", reason);
+                run("_close", reason);
             } catch (Exception e) {
-                ArqLogger.logError(e);
+                // Ignore
             }
 
             try {
@@ -226,7 +224,7 @@ public class ArqAsyncClient {
                 os.close();
                 socket.close();
             } catch (IOException e) {
-                ArqLogger.logError("Failed to close connection");
+                // Ignore
             }
 
             isConnected = false;
@@ -237,10 +235,7 @@ public class ArqAsyncClient {
             var action = ArqActions.get(command);
 
             if (action != null) {
-                //ArqLogger.logInfo("[CLIENT] " + command + " " + body);
                 action.runAsync(body);
-            } else {
-                ArqLogger.logError("Action " + command + " not found");
             }
         }
 
@@ -251,7 +246,6 @@ public class ArqAsyncClient {
             var raw = "";
 
             while (index1 != -1 && index2 != -1) {
-                //ArqLogger.logInfo("[CLIENT][RAW] " + data);
                 raw = data.substring(index1, index2 + ArqMessage.SUFFIX.length());
 
                 try {
@@ -261,7 +255,7 @@ public class ArqAsyncClient {
                     result.add(message);
                     data.replace(index1, index2 + ArqMessage.SUFFIX.length(), "");
                 } catch (ArqanoreException e) {
-                    ArqLogger.logError("Failed to parse message", e);
+                    // Ignore
                 }
 
                 index1 = data.toString().indexOf(ArqMessage.PREFIX);

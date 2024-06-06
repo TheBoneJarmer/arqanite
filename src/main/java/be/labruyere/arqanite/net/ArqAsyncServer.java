@@ -1,6 +1,5 @@
 package be.labruyere.arqanite.net;
 
-import be.labruyere.arqanite.ArqLogger;
 import be.labruyere.arqanore.exceptions.ArqanoreException;
 
 import java.io.IOException;
@@ -114,7 +113,7 @@ public class ArqAsyncServer {
             while (isRunning) {
                 try {
                     for (var i = 0; i < clients.length; i++) {
-                        final var client = clients[i];
+                        var client = clients[i];
 
                         if (client == null) {
                             continue;
@@ -131,7 +130,6 @@ public class ArqAsyncServer {
 
                     Thread.sleep(100);
                 } catch (Exception e) {
-                    ArqLogger.logError("Failed to process clients", e);
                     break;
                 }
             }
@@ -148,14 +146,14 @@ public class ArqAsyncServer {
                 try {
                     client.disconnect("Server shutdown");
                 } catch (Exception e) {
-                    ArqLogger.logError("Failed to close server client connection", e);
+                    // Ignore
                 }
             }
 
             try {
                 socket.close();
             } catch (Exception e) {
-                ArqLogger.logError("Failed to close server socket", e);
+                // Ignore
             }
 
             isRunning = false;
@@ -172,29 +170,7 @@ public class ArqAsyncServer {
         @Override
         public void run() {
             while (server.isRunning) {
-                int count = 0;
-
-                for (int i = 0; i < server.clients.length; i++) {
-                    var client = server.clients[i];
-
-                    if (client == null) {
-                        continue;
-                    }
-
-                    if (!client.isAlive() && client.isConnected) {
-                        ArqLogger.logWarning("Client " + client.getClientId() + " is connected but the thread has stopped.");
-
-                        try {
-                            client.disconnect("Server thread failure");
-                        } catch (ArqanoreException e) {
-                            ArqLogger.logError("Failed to disconnect client " + client.getClientId(), e);
-                        }
-                    }
-
-                    if (client.isConnected()) {
-                        count++;
-                    }
-                }
+                int count = getCount();
 
                 try {
                     var socket = server.socket.accept();
@@ -202,7 +178,7 @@ public class ArqAsyncServer {
 
                     if (count == server.clients.length) {
                         var message = new ArqMessage();
-                        message.setAction("leave");
+                        message.setAction("_close");
                         message.setBody("Server is full");
 
                         var os = socket.getOutputStream();
@@ -211,7 +187,6 @@ public class ArqAsyncServer {
                         os.close();
                         socket.close();
 
-                        ArqLogger.logWarning("Client could not connect because the server is full");
                         continue;
                     }
 
@@ -224,14 +199,28 @@ public class ArqAsyncServer {
                             break;
                         }
                     }
-                } catch (SocketTimeoutException e) {
-                    ArqLogger.logError(e);
-                    break;
                 } catch (Exception e) {
-                    ArqLogger.logError("An error occurred during socket accept", e);
                     break;
                 }
             }
+        }
+
+        private static int getCount() {
+            var count = 0;
+
+            for (var i = 0; i < server.clients.length; i++) {
+                var client = server.clients[i];
+
+                if (client == null) {
+                    continue;
+                }
+
+                if (client.isConnected()) {
+                    count++;
+                }
+            }
+
+            return count;
         }
     }
 
@@ -324,10 +313,10 @@ public class ArqAsyncServer {
             isDisconnected = true;
 
             try {
-                send("leave", reason);
-                run("leave", reason);
+                send("_close", reason);
+                run("_close", reason);
             } catch (Exception e) {
-                ArqLogger.logError("Failed to run or send action 'leave' during manual disconnect", e);
+                // Ignore
             }
 
             try {
@@ -335,7 +324,7 @@ public class ArqAsyncServer {
                 os.close();
                 socket.close();
             } catch (IOException e) {
-                ArqLogger.logError("[" + clientId + "] Failed to terminate client connection", e);
+                // Ignore
             }
         }
 
@@ -345,16 +334,14 @@ public class ArqAsyncServer {
             var reason = "";
 
             try {
-                send("join", Integer.toString(clientId));
+                send("_connect", Integer.toString(clientId));
             } catch (ArqanoreException e) {
-                ArqLogger.logError("Failed to send join message", e);
                 return;
             }
 
             try {
-                run("join", Integer.toString(clientId));
+                run("_connect", Integer.toString(clientId));
             } catch (Exception e) {
-                ArqLogger.logError(e);
                 return;
             }
 
@@ -382,7 +369,6 @@ public class ArqAsyncServer {
 
                     break;
                 } catch (Exception e) {
-                    ArqLogger.logError("[" + clientId + "] Exception", e);
                     reason = "A server error occurred";
                     break;
                 }
@@ -391,15 +377,15 @@ public class ArqAsyncServer {
             // Only send these messages when the client was not disconnected manually
             if (!isDisconnected) {
                 try {
-                    send("leave", reason);
+                    send("_close", reason);
                 } catch (ArqanoreException e) {
-                    ArqLogger.logError("[" + clientId + "] Failed to send leave message", e);
+                    // Ignore
                 }
 
                 try {
-                    run("leave", reason);
+                    run("_close", reason);
                 } catch (Exception e) {
-                    ArqLogger.logError(e);
+                    // Ignore
                 }
             }
 
@@ -410,7 +396,7 @@ public class ArqAsyncServer {
                     os.close();
                     socket.close();
                 } catch (IOException e) {
-                    ArqLogger.logError("[" + clientId + "] Failed to close client connection", e);
+                    // Ignore
                 }
             }
 
@@ -422,10 +408,7 @@ public class ArqAsyncServer {
             var action = ArqActions.get(command);
 
             if (action != null) {
-                //ArqLogger.logInfo("[" + clientId + "] " + command + " " + body);
                 action.runAsync(clientId, body);
-            } else {
-                ArqLogger.logError("Action " + command + " not found");
             }
         }
 

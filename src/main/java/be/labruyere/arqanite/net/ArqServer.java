@@ -1,12 +1,10 @@
 package be.labruyere.arqanite.net;
 
-import be.labruyere.arqanite.ArqLogger;
 import be.labruyere.arqanore.exceptions.ArqanoreException;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 
 public class ArqServer {
     static {
@@ -93,14 +91,7 @@ public class ArqServer {
 
                     var thread = new ServerClientThread(socket);
                     thread.start();
-                } catch (SocketException e) {
-                    if (!isDisconnected) {
-                        ArqLogger.logError(e);
-                    }
-
-                    break;
                 } catch (Exception e) {
-                    ArqLogger.logError(e);
                     break;
                 }
             }
@@ -109,7 +100,7 @@ public class ArqServer {
                 try {
                     listener.close();
                 } catch (Exception e) {
-                    ArqLogger.logError("Failed to close server socket", e);
+                    // Ignore
                 }
             }
 
@@ -135,12 +126,15 @@ public class ArqServer {
                 }
 
                 var msg = parse(bytes);
-                var res = run(msg);
-                write(socket, res.getBytes());
+                var res = run(msg.getAction(), msg.getBody());
+
+                if (res != null) {
+                    write(socket, res.getBytes());
+                }
 
                 socket.close();
             } catch (Exception e) {
-                ArqLogger.logError(e);
+                // Ignore
             }
         }
 
@@ -151,14 +145,14 @@ public class ArqServer {
             return msg;
         }
 
-        private String run(ArqMessage msg) throws Exception {
-            var action = ArqActions.get(msg.getAction());
+        private String run(String command, String body) throws Exception {
+            var action = ArqActions.get(command);
 
             if (action == null) {
-                return "Action " + msg.getAction() + " not found";
+                return null;
             }
 
-            var res = action.run(msg.getBody());
+            var res = action.run(body);
 
             if (res == null) {
                 return "null";
