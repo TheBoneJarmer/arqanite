@@ -1,10 +1,9 @@
 package be.labruyere.arqanite.net;
 
 import be.labruyere.arqanore.exceptions.ArqanoreException;
+import com.google.gson.Gson;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +11,7 @@ import java.util.Objects;
 import java.util.Random;
 
 public class ArqAsyncServer {
+    private final Gson gson;
     private final Random random;
     private ServerThread server;
     private int clientTimeout;
@@ -35,6 +35,7 @@ public class ArqAsyncServer {
 
     public ArqAsyncServer() {
         random = new Random();
+        gson = new Gson();
     }
 
     public boolean isRunning() {
@@ -298,10 +299,10 @@ public class ArqAsyncServer {
             }
         }
 
-        public void send(String command, String body) throws ArqanoreException {
+        public void send(String actionName, String actionBody) throws ArqanoreException {
             var message = new ArqMessage();
-            message.setAction(command);
-            message.setBody(body);
+            message.setAction(actionName);
+            message.setBody(actionBody);
 
             send(message);
         }
@@ -334,13 +335,19 @@ public class ArqAsyncServer {
             try {
                 send("_connect", Integer.toString(clientId));
             } catch (ArqanoreException e) {
-                return;
+                handleException(e);
+
+                reason = "A server error occurred";
+                isConnected = false;
             }
 
             try {
                 run("_connect", Integer.toString(clientId));
             } catch (Exception e) {
-                return;
+                handleException(e);
+
+                reason = "A server error occurred";
+                isConnected = false;
             }
 
             while (isConnected) {
@@ -367,6 +374,8 @@ public class ArqAsyncServer {
 
                     break;
                 } catch (Exception e) {
+                    handleException(e);
+
                     reason = "A server error occurred";
                     break;
                 }
@@ -402,11 +411,11 @@ public class ArqAsyncServer {
             isDisconnected = true;
         }
 
-        private void run(String command, String body) throws Exception {
-            var action = ArqActions.get(command);
+        private void run(String actionName, String actionBody) throws Exception {
+            var action = ArqActions.get(actionName);
 
             if (action != null) {
-                action.runAsync(clientId, body);
+                action.runAsync(clientId, actionBody);
             }
         }
 
@@ -449,6 +458,18 @@ public class ArqAsyncServer {
             }
 
             return result;
+        }
+
+        private void handleException(Exception e) {
+            try {
+                var sw = new StringWriter();
+                var pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+
+                run("_error", sw.toString());
+            } catch (Exception ex) {
+                // Ignore
+            }
         }
     }
 }

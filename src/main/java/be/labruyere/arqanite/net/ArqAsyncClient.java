@@ -1,6 +1,7 @@
 package be.labruyere.arqanite.net;
 
 import be.labruyere.arqanore.exceptions.ArqanoreException;
+import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +10,7 @@ import java.net.*;
 import java.util.ArrayList;
 
 public class ArqAsyncClient {
+    private final Gson gson;
     private ClientThread thread;
     private int soTimeout;
     private int connectTimeout = 1000;
@@ -27,6 +29,10 @@ public class ArqAsyncClient {
 
     public void setConnectTimeout(int connectTimeout) {
         this.connectTimeout = connectTimeout;
+    }
+
+    public ArqAsyncClient() {
+        this.gson = new Gson();
     }
 
     public boolean isConnected() {
@@ -203,6 +209,8 @@ public class ArqAsyncClient {
 
                     break;
                 } catch (Exception e) {
+                    handleException(e);
+
                     reason = "A client error occurred";
                     break;
                 }
@@ -211,7 +219,7 @@ public class ArqAsyncClient {
             try {
                 run("_close", reason);
             } catch (Exception e) {
-                // Ignore
+                handleException(e);
             }
 
             try {
@@ -258,6 +266,14 @@ public class ArqAsyncClient {
             }
 
             return result;
+        }
+
+        private void handleException(Exception e) {
+            try {
+                run("_error", gson.toJson(e));
+            } catch (Exception ex) {
+                // Ignore
+            }
         }
     }
 }
