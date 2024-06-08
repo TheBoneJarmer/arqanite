@@ -3,9 +3,7 @@ package be.labruyere.arqanite.net;
 import be.labruyere.arqanore.exceptions.ArqanoreException;
 import com.google.gson.Gson;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 
@@ -270,7 +268,11 @@ public class ArqAsyncClient {
 
         private void handleException(Exception e) {
             try {
-                run("_error", gson.toJson(e));
+                var sw = new StringWriter();
+                var pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+
+                run("_error", sw.toString());
             } catch (Exception ex) {
                 // Ignore
             }
