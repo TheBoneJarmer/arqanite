@@ -7,7 +7,7 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 
-public class ArqAsyncClient {
+public class ArqPersistentSocketClient {
     private final Gson gson;
     private ClientThread thread;
     private int soTimeout;
@@ -29,7 +29,7 @@ public class ArqAsyncClient {
         this.connectTimeout = connectTimeout;
     }
 
-    public ArqAsyncClient() {
+    public ArqPersistentSocketClient() {
         this.gson = new Gson();
     }
 

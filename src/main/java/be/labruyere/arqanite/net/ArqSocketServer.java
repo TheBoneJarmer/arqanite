@@ -6,13 +6,13 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class ArqServer {
-    private ServerThread server;
+public class ArqSocketServer {
+    private ServerThread thread;
     private int acceptTimeout;
     private int clientTimeout;
 
     public boolean isRunning() {
-        return server != null && server.isConnected;
+        return thread != null && thread.isConnected;
     }
 
     public int getAcceptTimeout() {
@@ -32,29 +32,47 @@ public class ArqServer {
     }
 
     public void start(int port) throws ArqanoreException {
-        if (server != null && server.isAlive()) {
+        if (thread != null && thread.isAlive()) {
             return;
         }
 
-        server = new ServerThread(port);
-        server.start();
+        thread = new ServerThread(port);
+        thread.start();
     }
 
-    public void stop() throws ArqanoreException {
-        if (server == null || !server.isAlive()) {
+    public void stop() throws IOException {
+        if (thread == null || !thread.isAlive()) {
             return;
         }
 
-        server.close();
+        thread.close();
     }
 
+    /* EVENTS */
+    protected String onAction(ArqClient client, String action, String body) {
+        return null;
+    }
+
+    protected void onConnect(ArqClient client) {
+
+    }
+
+    protected void onClose(ArqClient client) {
+
+    }
+
+    protected void onError(String message, Exception e) {
+
+    }
+
+    /* THREADS */
     private class ServerThread extends Thread {
-        public final ServerSocket listener;
+        public ServerSocket listener;
         public boolean isConnected;
         public boolean isDisconnected;
 
         public ServerThread(int port) throws ArqanoreException {
-            super("arq_server_static");
+            super("arq_server");
 
             try {
                 this.listener = new ServerSocket(port);
@@ -62,19 +80,15 @@ public class ArqServer {
 
                 this.isConnected = true;
             } catch (Exception e) {
-                throw new ArqanoreException("Failed to start server", e);
+                onError("Failed to start server", e);
             }
         }
 
-        public void close() throws ArqanoreException {
+        public void close() throws IOException {
             isConnected = false;
             isDisconnected = true;
 
-            try {
-                listener.close();
-            } catch (IOException e) {
-                throw new ArqanoreException(e);
-            }
+            listener.close();
         }
 
         @Override
@@ -87,7 +101,7 @@ public class ArqServer {
                     var thread = new ServerClientThread(socket);
                     thread.start();
                 } catch (Exception e) {
-                    break;
+                    onError("An error occurred during socket accept", e);
                 }
             }
 
@@ -95,7 +109,7 @@ public class ArqServer {
                 try {
                     listener.close();
                 } catch (Exception e) {
-                    // Ignore
+                    onError("Failed to close server socket", e);
                 }
             }
 
@@ -104,32 +118,32 @@ public class ArqServer {
         }
     }
 
-    private static class ServerClientThread extends Thread {
-        private final Socket socket;
+    private class ServerClientThread extends Thread {
+        private final ArqClient client;
 
         public ServerClientThread(Socket socket) {
-            this.socket = socket;
+            this.client = new ArqClient(socket);
         }
 
         @Override
         public void run() {
             try {
-                var bytes = read(socket);
+                var bytes = client.read();
 
                 if (bytes == null) {
                     return;
                 }
 
                 var msg = parse(bytes);
-                var res = run(msg.getAction(), msg.getBody());
+                var res = onAction(client, msg.getAction(), msg.getBody());
 
                 if (res != null) {
-                    write(socket, res.getBytes());
+                    client.write(res);
                 }
 
-                socket.close();
+                client.close();
             } catch (Exception e) {
-                // Ignore
+                onError("An error occurred in client thread", e);
             }
         }
 
@@ -138,58 +152,6 @@ public class ArqServer {
             msg.parse(data, data.length);
 
             return msg;
-        }
-
-        private String run(String command, String body) throws Exception {
-            var action = ArqActions.get(command);
-
-            if (action == null) {
-                return null;
-            }
-
-            var res = action.run(body);
-
-            if (res == null) {
-                return "null";
-            }
-
-            return res;
-        }
-
-        private void write(Socket socket, byte[] data) throws IOException {
-            var os = socket.getOutputStream();
-            os.write(data);
-        }
-
-        private byte[] read(Socket socket) throws IOException {
-            var is = socket.getInputStream();
-            var buffer = new byte[1024 * 10];
-            var sb = new StringBuilder();
-            var eof = false;
-
-            while (!eof) {
-                var read = is.read(buffer);
-
-                if (read == -1) {
-                    eof = true;
-                } else {
-                    var chunk = new String(buffer, 0, read);
-                    sb.append(chunk);
-                }
-
-                if (sb.toString().endsWith("</ARQ>")) {
-                    break;
-                }
-            }
-
-            if (eof) {
-                return null;
-            }
-
-            var str = sb.toString();
-            var bytes = str.getBytes();
-
-            return bytes;
         }
     }
 }

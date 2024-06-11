@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
 
-public class ArqAsyncServer {
+public class ArqPersistentSocketServer {
     private final Gson gson;
     private final Random random;
     private ServerThread server;
@@ -33,7 +33,7 @@ public class ArqAsyncServer {
         this.acceptTimeout = acceptTimeout;
     }
 
-    public ArqAsyncServer() {
+    public ArqPersistentSocketServer() {
         random = new Random();
         gson = new Gson();
     }

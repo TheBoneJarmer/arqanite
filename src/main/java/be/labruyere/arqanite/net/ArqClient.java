@@ -1,86 +1,71 @@
 package be.labruyere.arqanite.net;
 
-import be.labruyere.arqanore.exceptions.ArqanoreException;
-
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
+import java.net.SocketAddress;
 
-public class ArqClient {
-    {
-        timeout = 0;
+public final class ArqClient {
+    private final Socket socket;
+
+    public InetAddress getInetAddress() {
+        return socket.getInetAddress();
     }
 
-    private String host;
-    private int port;
-    private int timeout;
-
-    public String getHost() {
-        return host;
+    public SocketAddress getLocalSocketAddress() {
+        return socket.getLocalSocketAddress();
     }
 
-    public void setHost(String host) {
-        this.host = host;
+    public SocketAddress getRemoteSocketAddress() {
+        return socket.getRemoteSocketAddress();
     }
 
-    public int getPort() {
-        return port;
+    ArqClient(Socket socket) {
+        this.socket = socket;
     }
 
-    public void setPort(int port) {
-        this.port = port;
+    /* SOCKET METHODS */
+    void write(String data) throws IOException {
+        write(data.getBytes());
     }
 
-    public int getTimeout() {
-        return timeout;
+    void write(byte[] data) throws IOException {
+        var os = socket.getOutputStream();
+        os.write(data);
     }
 
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
-    }
-
-    public String send(String action, String body) throws ArqanoreException {
+    byte[] read() throws IOException {
+        var is = socket.getInputStream();
         var buffer = new byte[1024 * 10];
         var sb = new StringBuilder();
         var eof = false;
 
-        var msg = new ArqMessage();
-        msg.setAction(action);
-        msg.setBody(body);
+        while (!eof) {
+            var read = is.read(buffer);
 
-        try {
-            var address = new InetSocketAddress(host, port);
-            var socket = new Socket();
-            socket.connect(address, timeout);
-
-            var os = socket.getOutputStream();
-            var is = socket.getInputStream();
-
-            os.write(msg.toBytes());
-
-            while (!eof) {
-                var read = is.read(buffer);
-
-                if (read == -1) {
-                    eof = true;
-                } else {
-                    var chunk = new String(buffer, 0, read);
-                    sb.append(chunk);
-                }
-
-                if (sb.toString().endsWith("</ARQ>")) {
-                    break;
-                }
+            if (read == -1) {
+                eof = true;
+            } else {
+                var chunk = new String(buffer, 0, read);
+                sb.append(chunk);
             }
 
-            socket.close();
-        } catch (SocketTimeoutException e) {
-            throw new ArqanoreException("Socket timeout", e);
-        } catch (IOException e) {
-            throw new ArqanoreException("Failed to send message", e);
+            if (sb.toString().endsWith("</ARQ>")) {
+                break;
+            }
         }
 
-        return sb.toString();
+        if (eof) {
+            return null;
+        }
+
+        var str = sb.toString();
+        var bytes = str.getBytes();
+
+        return bytes;
+    }
+
+    void close() throws IOException {
+        socket.close();
     }
 }
