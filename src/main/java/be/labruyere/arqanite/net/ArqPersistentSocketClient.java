@@ -1,14 +1,12 @@
 package be.labruyere.arqanite.net;
 
 import be.labruyere.arqanore.exceptions.ArqanoreException;
-import com.google.gson.Gson;
 
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 
 public class ArqPersistentSocketClient {
-    private final Gson gson;
     private ClientThread thread;
     private int soTimeout;
     private int connectTimeout = 1000;
@@ -30,7 +28,7 @@ public class ArqPersistentSocketClient {
     }
 
     public ArqPersistentSocketClient() {
-        this.gson = new Gson();
+
     }
 
     public boolean isConnected() {

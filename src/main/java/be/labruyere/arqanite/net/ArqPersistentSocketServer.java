@@ -1,7 +1,6 @@
 package be.labruyere.arqanite.net;
 
 import be.labruyere.arqanore.exceptions.ArqanoreException;
-import com.google.gson.Gson;
 
 import java.io.*;
 import java.net.*;
@@ -11,7 +10,6 @@ import java.util.Objects;
 import java.util.Random;
 
 public class ArqPersistentSocketServer {
-    private final Gson gson;
     private final Random random;
     private ServerThread server;
     private int clientTimeout;
@@ -35,7 +33,6 @@ public class ArqPersistentSocketServer {
 
     public ArqPersistentSocketServer() {
         random = new Random();
-        gson = new Gson();
     }
 
     public boolean isRunning() {
