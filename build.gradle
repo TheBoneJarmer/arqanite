@@ -9,17 +9,3 @@ repositories {
 dependencies {
     implementation files('lib/jarqanore.jar')
 }
-
-jar {
-    from {
-        configurations.runtimeClasspath.collect {
-            duplicatesStrategy = DuplicatesStrategy.EXCLUDE;
-
-            if (it.isDirectory()) {
-                it
-            } else {
-                zipTree(it)
-            }
-        }
-    }
-}

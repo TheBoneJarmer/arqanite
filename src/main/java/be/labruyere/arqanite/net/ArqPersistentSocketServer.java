@@ -1,5 +1,6 @@
 package be.labruyere.arqanite.net;
 
+import be.labruyere.arqanite.enums.ArqConnection;
 import be.labruyere.arqanore.exceptions.ArqanoreException;
 
 import java.io.*;
@@ -39,7 +40,7 @@ public class ArqPersistentSocketServer {
         return server != null && server.isRunning;
     }
 
-    public ServerClientThread[] getClients() {
+    public ArqPersistentClient[] getClients() {
         if (server == null) {
             return null;
         }
@@ -47,17 +48,17 @@ public class ArqPersistentSocketServer {
         var stream = Arrays.stream(server.clients);
         stream = stream.filter(Objects::nonNull);
 
-        return stream.toArray(ServerClientThread[]::new);
+        return stream.toArray(ArqPersistentClient[]::new);
     }
 
-    public ServerClientThread getClient(int id) {
+    public ArqPersistentClient getClient(int id) {
         if (server == null) {
             return null;
         }
 
         var stream = Arrays.stream(server.clients);
         stream = stream.filter(Objects::nonNull);
-        stream = stream.filter(f -> f.clientId == id);
+        stream = stream.filter(f -> f.getId() == id);
 
         return stream.findFirst().orElse(null);
     }
@@ -79,9 +80,31 @@ public class ArqPersistentSocketServer {
         server.close();
     }
 
+    /* EVENTS */
+    protected void onAction(ArqPersistentClient client, String action, String body) throws Exception {
+
+    }
+
+    protected void onConnect(ArqPersistentClient client) {
+
+    }
+
+    protected void onClose(ArqPersistentClient client, String reason) {
+
+    }
+
+    protected void onError(String message, Exception e) {
+
+    }
+
+    protected void onError(ArqPersistentClient client, String message, Exception e) {
+
+    }
+
+    /* THREADS */
     private class ServerThread extends Thread {
-        public final ServerSocket socket;
-        public final ServerClientThread[] clients;
+        public ServerSocket socket;
+        public ArqPersistentClient[] clients;
         public boolean isRunning;
 
         public ServerThread(int port) throws ArqanoreException {
@@ -90,10 +113,10 @@ public class ArqPersistentSocketServer {
             try {
                 this.socket = new ServerSocket(port);
                 this.socket.setSoTimeout(acceptTimeout);
-                this.clients = new ServerClientThread[1000];
+                this.clients = new ArqPersistentClient[1000];
                 this.isRunning = true;
             } catch (Exception e) {
-                throw new ArqanoreException("Failed to start server", e);
+                onError("Failed to start server", e);
             }
         }
 
@@ -115,7 +138,7 @@ public class ArqPersistentSocketServer {
                             continue;
                         }
 
-                        if (!client.isAlive()) {
+                        if (client.connection == ArqConnection.CLOSED) {
                             clients[i] = null;
                         }
                     }
@@ -126,6 +149,7 @@ public class ArqPersistentSocketServer {
 
                     Thread.sleep(100);
                 } catch (Exception e) {
+                    onError("An exception occurred in the server thread. Shutting down.", e);
                     break;
                 }
             }
@@ -135,21 +159,21 @@ public class ArqPersistentSocketServer {
                     continue;
                 }
 
-                if (!client.isConnected) {
+                if (client.connection == ArqConnection.CLOSED) {
                     continue;
                 }
 
                 try {
-                    client.disconnect("Server shutdown");
+                    client.close("Server shutdown");
                 } catch (Exception e) {
-                    // Ignore
+                    onError("Failed to disconnect client " + client.getId(), e);
                 }
             }
 
             try {
                 socket.close();
             } catch (Exception e) {
-                // Ignore
+                onError("Failed to close server socket", e);
             }
 
             isRunning = false;
@@ -191,11 +215,16 @@ public class ArqPersistentSocketServer {
 
                     for (int i = 0; i < server.clients.length; i++) {
                         if (server.clients[i] == null) {
-                            server.clients[i] = thread;
+                            server.clients[i] = thread.client;
                             break;
                         }
                     }
+                } catch (SocketException e) {
+                    // Do nothing with this exception. This one is thrown because the server socket state has changed.
+                    // Therefore the server thread handles this one.
+                    break;
                 } catch (Exception e) {
+                    onError("An exception occurred in accept thread. Thread is being terminated now so new connections won't be handled!", e);
                     break;
                 }
             }
@@ -211,7 +240,7 @@ public class ArqPersistentSocketServer {
                     continue;
                 }
 
-                if (client.isConnected()) {
+                if (client.connection == ArqConnection.OPEN) {
                     count++;
                 }
             }
@@ -221,199 +250,87 @@ public class ArqPersistentSocketServer {
     }
 
     public class ServerClientThread extends Thread {
-        private final int clientId;
-        private final Socket socket;
-        private final InputStream is;
-        private final OutputStream os;
-        private final StringBuilder data;
-        private boolean isConnected;
-        private boolean isDisconnected;
-        private Object userData;
+        private int clientId;
+        private ArqPersistentClient client;
+        private StringBuilder data;
 
-        public boolean isConnected() {
-            return isConnected;
-        }
-
-        public int getClientId() {
-            return clientId;
-        }
-
-        /**
-         * Returns the custom user data object attached to this client thread
-         * @return The user data for this client
-         */
-        public Object getUserData() {
-            return userData;
-        }
-
-        /**
-         * Sets the custom user data object for this client
-         * @param userData The userdata object, can be anything.
-         */
-        public void setUserData(Object userData) {
-            this.userData = userData;
-        }
-
-        /**
-         * Returns the associated InetAddress object for the socket.
-         * @return The inet address of the socket
-         */
-        public InetAddress getInetAddress() {
-            return socket.getInetAddress();
-        }
-
-        /**
-         * Returns the associated <b>remote</b> socket address for the socket.
-         * @return The socket address of the socket
-         */
-        public SocketAddress getSocketAddress() {
-            return socket.getRemoteSocketAddress();
-        }
-
-        public ServerClientThread(Socket socket) throws ArqanoreException {
-            this.clientId = generateId();
-            this.socket = socket;
-
+        public ServerClientThread(Socket socket) {
             try {
-                socket.setTcpNoDelay(true); // Enable Nagle's algorithm
+                this.clientId = generateId();
+                this.client = new ArqPersistentClient(socket, clientId);
 
-                is = socket.getInputStream();
-                os = socket.getOutputStream();
-                isConnected = true;
                 data = new StringBuilder();
             } catch (IOException e) {
-                throw new ArqanoreException("Failed to instantiate server client socket", e);
+                onError("Failed to instantiate server client", e);
             }
 
             this.setName("arq_server_client" + this.clientId);
         }
 
-        public void send(ArqMessage message) throws ArqanoreException {
-            try {
-                os.write(message.toBytes());
-            } catch (IOException e) {
-                throw new ArqanoreException(e);
-            }
-        }
-
-        public void send(String actionName, String actionBody) throws ArqanoreException {
-            var message = new ArqMessage();
-            message.setAction(actionName);
-            message.setBody(actionBody);
-
-            send(message);
-        }
-
-        public void disconnect(String reason) throws ArqanoreException {
-            isConnected = false;
-            isDisconnected = true;
-
-            try {
-                send("_close", reason);
-                run("_close", reason);
-            } catch (Exception e) {
-                // Ignore
-            }
-
-            try {
-                is.close();
-                os.close();
-                socket.close();
-            } catch (IOException e) {
-                // Ignore
-            }
-        }
-
         @Override
         public void run() {
-            var buffer = new byte[1024 * 10];
-            var reason = "";
+            var closeReason = "";
 
             try {
-                send("_connect", Integer.toString(clientId));
-            } catch (ArqanoreException e) {
-                handleException(e);
-
-                reason = "A server error occurred";
-                isConnected = false;
-            }
-
-            try {
-                run("_connect", Integer.toString(clientId));
+                onAction(client, "_connect", Integer.toString(clientId));
+                client.send("_connect", Integer.toString(clientId));
             } catch (Exception e) {
-                handleException(e);
-
-                reason = "A server error occurred";
-                isConnected = false;
+                onError("A server error occurred", e);
             }
 
-            while (isConnected) {
+            while (true) {
+                if (closeReason != null && !closeReason.isEmpty()) {
+                    break;
+                }
+
+                if (client.connection == ArqConnection.CLOSED) {
+                    break;
+                }
+
                 try {
-                    var read = is.read(buffer);
+                    var chunk = client.read();
 
-                    if (read == -1) {
-                        isConnected = false;
-                        continue;
+                    if (chunk == null) {
+                        closeReason = "Connection lost";
+                    } else {
+                        data.append(chunk);
                     }
-
-                    data.append(new String(buffer, 0, read));
 
                     for (var message : parse()) {
-                        run(message.getAction(), message.getBody());
+                        var action = message.getAction();
+                        var body = message.getBody();
+
+                        if (action.equals("_close")) {
+                            closeReason = body;
+
+                            client.connection = ArqConnection.CLOSED;
+                            client.close();
+                            break;
+                        }
+
+                        onAction(client, action, body);
                     }
                 } catch (SocketTimeoutException e) {
-                    reason = "Socket timeout";
-                    break;
+                    closeReason = "Socket timeout";
                 } catch (SocketException e) {
-                    if (!isDisconnected) {
-                        reason = "Connection lost";
+                    if (client.connection == ArqConnection.OPEN) {
+                        closeReason = "Connection lost";
                     }
-
-                    break;
                 } catch (Exception e) {
-                    handleException(e);
-
-                    reason = "A server error occurred";
-                    break;
+                    onError("A server error occurred", e);
+                    closeReason = "An server error occurred";
                 }
             }
 
-            // Only send these messages when the client was not disconnected manually
-            if (!isDisconnected) {
+            if (client.connection != ArqConnection.CLOSED) {
                 try {
-                    send("_close", reason);
-                } catch (ArqanoreException e) {
-                    // Ignore
-                }
-
-                try {
-                    run("_close", reason);
+                    client.close(closeReason);
                 } catch (Exception e) {
-                    // Ignore
+                    onError("Failed to close client socket", e);
                 }
             }
 
-            // Only close the streams and socket when the client was not disconnected manually
-            if (!isDisconnected) {
-                try {
-                    is.close();
-                    os.close();
-                    socket.close();
-                } catch (IOException e) {
-                    // Ignore
-                }
-            }
-
-            isConnected = false;
-            isDisconnected = true;
-        }
-
-        private void run(String actionName, String actionBody) throws Exception {
-            var action = ArqActions.get(actionName);
-
-            if (action != null) {
-                action.runAsync(clientId, actionBody);
-            }
+            onClose(client, closeReason);
         }
 
         private ArrayList<ArqMessage> parse() throws ArqanoreException {
@@ -455,18 +372,6 @@ public class ArqPersistentSocketServer {
             }
 
             return result;
-        }
-
-        private void handleException(Exception e) {
-            try {
-                var sw = new StringWriter();
-                var pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-
-                run("_error", sw.toString());
-            } catch (Exception ex) {
-                // Ignore
-            }
         }
     }
 }

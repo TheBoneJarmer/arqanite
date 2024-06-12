@@ -1,5 +1,6 @@
 package be.labruyere.arqanite.net;
 
+import be.labruyere.arqanite.enums.ArqConnection;
 import be.labruyere.arqanore.exceptions.ArqanoreException;
 
 import java.io.*;
@@ -31,38 +32,12 @@ public class ArqPersistentSocketClient {
 
     }
 
-    public boolean isConnected() {
-        if (thread == null) {
-            return false;
-        }
-
-        return thread.isConnected();
-    }
-
-    /**
-     * Returns the associated InetAddress object for the client socket.
-     *
-     * @return The inet address of the socket
-     */
-    public InetAddress getInetAddress() {
+    public ArqConnection getConnection() {
         if (thread == null) {
             return null;
         }
 
-        return thread.socket.getInetAddress();
-    }
-
-    /**
-     * Returns the associated <b>remote</b> socket address for the client socket.
-     *
-     * @return The socket address of the socket
-     */
-    public SocketAddress getSocketAddress() {
-        if (thread == null) {
-            return null;
-        }
-
-        return thread.socket.getRemoteSocketAddress();
+        return thread.connection;
     }
 
     public void connect(String ip, int port) throws ArqanoreException {
@@ -70,24 +45,12 @@ public class ArqPersistentSocketClient {
         thread.start();
     }
 
-    public void disconnect() throws ArqanoreException {
+    public void close(String reason) throws ArqanoreException {
         if (thread == null) {
             return;
         }
 
-        thread.disconnect();
-    }
-
-    public void send(ArqMessage message) throws ArqanoreException {
-        if (thread == null) {
-            return;
-        }
-
-        try {
-            thread.send(message);
-        } catch (Exception e) {
-            throw new ArqanoreException("Failed to send message", e);
-        }
+        thread.close(reason);
     }
 
     public void send(String command, String body) throws ArqanoreException {
@@ -102,16 +65,31 @@ public class ArqPersistentSocketClient {
         }
     }
 
+    /* EVENTS */
+    protected void onAction(String action, String body) throws Exception {
+
+    }
+
+    protected void onConnect() {
+
+    }
+
+    protected void onClose(String reason) {
+
+    }
+
+    protected void onError(String message, Exception e) {
+
+    }
+
+    /* THREADS */
     private class ClientThread extends Thread {
         private final Socket socket;
-        private final InputStream is;
-        private final OutputStream os;
         private final StringBuilder data;
-        private boolean isConnected;
-        private boolean isTerminated;
+        private ArqConnection connection;
 
-        public boolean isConnected() {
-            return isConnected;
+        public ArqConnection getConnection() {
+            return connection;
         }
 
         public ClientThread(String ip, int port) throws ArqanoreException {
@@ -123,63 +101,78 @@ public class ArqPersistentSocketClient {
                 socket.setSoTimeout(soTimeout);
                 socket.connect(new InetSocketAddress(ip, port), connectTimeout);
 
-                is = socket.getInputStream();
-                os = socket.getOutputStream();
-                isConnected = true;
                 data = new StringBuilder();
+                connection = ArqConnection.OPEN;
             } catch (Exception e) {
                 throw new ArqanoreException(e);
             }
         }
 
-        public void disconnect() throws ArqanoreException {
-            isConnected = false;
-            isTerminated = true;
+        public void close(String reason) throws ArqanoreException {
+            if (connection == ArqConnection.CLOSED) {
+                throw new ArqanoreException("Cannot close connection because connection is not open");
+            }
 
             try {
+                var message = new ArqMessage();
+                message.setAction("_close");
+                message.setBody(reason);
+
+                try {
+                    var os = socket.getOutputStream();
+                    os.write(message.toBytes());
+                } catch (IOException e) {
+                    onError("Failed to send message", e);
+                }
+
+                connection = ArqConnection.CLOSED;
                 socket.close();
-                is.close();
-                os.close();
-            } catch (IOException e) {
-                throw new ArqanoreException("Failed to close connection", e);
+            } catch (Exception e) {
+                onError("Failed to close connection", e);
             }
         }
-
-        public void send(ArqMessage message) throws ArqanoreException {
-            if (!isConnected) {
-                return;
-            }
-
-            try {
-                os.write(message.toBytes());
-            } catch (IOException e) {
-                throw new ArqanoreException(e);
-            }
-        }
-
         public void send(String command, String body) throws ArqanoreException {
+            if (connection != ArqConnection.OPEN) {
+                throw new ArqanoreException("Cannot send message because connection is not open");
+            }
+
             var message = new ArqMessage();
             message.setAction(command);
             message.setBody(body);
 
-            send(message);
+            try {
+                var os = socket.getOutputStream();
+                os.write(message.toBytes());
+            } catch (IOException e) {
+                onError("Failed to send message", e);
+            }
         }
 
         @Override
         public void run() {
+            var closeReason = "";
             var buffer = new byte[10 * 1024];
-            var reason = "";
 
-            while (isConnected) {
+            onConnect();
+
+            while (true) {
+                if (!closeReason.isEmpty()) {
+                    break;
+                }
+
+                if (socket.isClosed()) {
+                    break;
+                }
+
                 try {
+                    var is = socket.getInputStream();
                     var read = is.read(buffer);
 
                     if (read == -1) {
-                        reason = "Connection lost";
-                        break;
+                        closeReason = "Connection lost";
+                    } else {
+                        data.append(new String(buffer, 0, read));
                     }
-
-                    data.append(new String(buffer, 0, read));
 
                     for (var message : parse()) {
                         var action = message.getAction();
@@ -187,55 +180,34 @@ public class ArqPersistentSocketClient {
 
                         // If the server initialized the closure of the connection the client should not receive an error but close connection gracefully
                         if (action.equals("_close")) {
-                            reason = message.getBody();
-
-                            isConnected = false;
+                            closeReason = body;
                             break;
                         }
 
-                        run(action, body);
+                        onAction(action, body);
                     }
                 } catch (SocketTimeoutException e) {
-                    reason = "Socket timeout";
-                    break;
+                    closeReason = "Socket timeout";
                 } catch (SocketException e) {
-                    if (!isTerminated) {
-                        reason = "Connection lost";
+                    if (connection == ArqConnection.OPEN) {
+                        closeReason = "Connection lost";
                     }
-
-                    break;
                 } catch (Exception e) {
-                    handleException(e);
-
-                    reason = "A client error occurred";
-                    break;
+                    onError("A client error occurred", e);
+                    closeReason = "A client error occurred";
                 }
             }
 
             try {
-                run("_close", reason);
+                if (connection != ArqConnection.CLOSED) {
+                    connection = ArqConnection.CLOSED;
+                    socket.close();
+                }
             } catch (Exception e) {
-                handleException(e);
+                onError("Failed to close socket", e);
             }
 
-            try {
-                is.close();
-                os.close();
-                socket.close();
-            } catch (IOException e) {
-                // Ignore
-            }
-
-            isConnected = false;
-            thread = null;
-        }
-
-        private void run(String command, String body) throws Exception {
-            var action = ArqActions.get(command);
-
-            if (action != null) {
-                action.runAsync(body);
-            }
+            onClose(closeReason);
         }
 
         private ArrayList<ArqMessage> parse() {
@@ -253,8 +225,8 @@ public class ArqPersistentSocketClient {
 
                     result.add(message);
                     data.replace(index1, index2 + ArqMessage.SUFFIX.length(), "");
-                } catch (ArqanoreException e) {
-                    // Ignore
+                } catch (Exception e) {
+                    // Ignore this exception. It is possible the socket data was not complete yet thus parsing will fail. This is expected.
                 }
 
                 index1 = data.toString().indexOf(ArqMessage.PREFIX);
@@ -262,18 +234,6 @@ public class ArqPersistentSocketClient {
             }
 
             return result;
-        }
-
-        private void handleException(Exception e) {
-            try {
-                var sw = new StringWriter();
-                var pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-
-                run("_error", sw.toString());
-            } catch (Exception ex) {
-                // Ignore
-            }
         }
     }
 }
