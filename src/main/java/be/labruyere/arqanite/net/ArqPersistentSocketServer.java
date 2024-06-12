@@ -271,12 +271,7 @@ public class ArqPersistentSocketServer {
         public void run() {
             var closeReason = "";
 
-            try {
-                onAction(client, "_connect", Integer.toString(clientId));
-                client.send("_connect", Integer.toString(clientId));
-            } catch (Exception e) {
-                onError("A server error occurred", e);
-            }
+            onConnect(client);
 
             while (true) {
                 if (closeReason != null && !closeReason.isEmpty()) {
@@ -317,7 +312,7 @@ public class ArqPersistentSocketServer {
                         closeReason = "Connection lost";
                     }
                 } catch (Exception e) {
-                    onError("A server error occurred", e);
+                    onError(client, "A server error occurred", e);
                     closeReason = "An server error occurred";
                 }
             }
