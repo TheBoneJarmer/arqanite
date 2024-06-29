@@ -3,7 +3,7 @@ package be.labruyere.arqanite;
 import be.labruyere.arqanore.Joystick;
 import be.labruyere.arqanore.Keyboard;
 import be.labruyere.arqanore.enums.Keys;
-import be.labruyere.arqanore.exceptions.ArqanoreException;
+import be.labruyere.arqanore.exceptions.Exception;
 
 import java.util.HashMap;
 
@@ -32,7 +32,7 @@ public class ArqInput {
         return !joystickDisabled[joystickId];
     }
 
-    public static boolean isJoystickConnected() throws ArqanoreException {
+    public static boolean isJoystickConnected() throws Exception {
         return joystickConnected[joystickId];
     }
 
@@ -98,7 +98,7 @@ public class ArqInput {
         return inputState(pressed, state.value);
     }
 
-    public static void update() throws ArqanoreException {
+    public static void update() throws Exception {
         for (var set : states.entrySet()) {
             var state = set.getValue();
             var value = state.value;
@@ -122,7 +122,7 @@ public class ArqInput {
     }
 
     /* HELPER FUNCTIONS */
-    private static byte updateState(String key, String stick, byte state) throws ArqanoreException {
+    private static byte updateState(String key, String stick, byte state) throws Exception {
         var down = false;
         var keyboard = false;
         var joystick = false;
@@ -148,7 +148,7 @@ public class ArqInput {
         return (pressed && state == 1) || (!pressed && state > 0);
     }
 
-    private static boolean joystickState(String data) throws ArqanoreException {
+    private static boolean joystickState(String data) throws Exception {
         if (data == null || data.isEmpty()) {
             return false;
         }

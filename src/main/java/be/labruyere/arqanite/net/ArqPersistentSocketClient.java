@@ -1,7 +1,6 @@
 package be.labruyere.arqanite.net;
 
 import be.labruyere.arqanite.enums.ArqConnection;
-import be.labruyere.arqanore.exceptions.ArqanoreException;
 
 import java.io.*;
 import java.net.*;
@@ -40,12 +39,12 @@ public class ArqPersistentSocketClient {
         return thread.connection;
     }
 
-    public void connect(String ip, int port) throws ArqanoreException {
+    public void connect(String ip, int port) throws Exception {
         thread = new ClientThread(ip, port);
         thread.start();
     }
 
-    public void close(String reason) throws ArqanoreException {
+    public void close(String reason) throws Exception {
         if (thread == null) {
             return;
         }
@@ -53,7 +52,7 @@ public class ArqPersistentSocketClient {
         thread.close(reason);
     }
 
-    public void send(String command, String body) throws ArqanoreException {
+    public void send(String command, String body) throws Exception {
         if (thread == null) {
             return;
         }
@@ -61,7 +60,7 @@ public class ArqPersistentSocketClient {
         try {
             thread.send(command, body);
         } catch (Exception e) {
-            throw new ArqanoreException("Failed to send message", e);
+            throw new Exception("Failed to send message", e);
         }
     }
 
@@ -92,7 +91,7 @@ public class ArqPersistentSocketClient {
             return connection;
         }
 
-        public ClientThread(String ip, int port) throws ArqanoreException {
+        public ClientThread(String ip, int port) throws Exception {
             super("arq_client");
 
             try {
@@ -104,13 +103,13 @@ public class ArqPersistentSocketClient {
                 data = new StringBuilder();
                 connection = ArqConnection.OPEN;
             } catch (Exception e) {
-                throw new ArqanoreException(e);
+                throw new Exception(e);
             }
         }
 
-        public void close(String reason) throws ArqanoreException {
+        public void close(String reason) throws Exception {
             if (connection == ArqConnection.CLOSED) {
-                throw new ArqanoreException("Cannot close connection because connection is not open");
+                throw new Exception("Cannot close connection because connection is not open");
             }
 
             try {
@@ -131,9 +130,9 @@ public class ArqPersistentSocketClient {
                 onError("Failed to close connection", e);
             }
         }
-        public void send(String command, String body) throws ArqanoreException {
+        public void send(String command, String body) throws Exception {
             if (connection != ArqConnection.OPEN) {
-                throw new ArqanoreException("Cannot send message because connection is not open");
+                throw new Exception("Cannot send message because connection is not open");
             }
 
             var message = new ArqMessage();

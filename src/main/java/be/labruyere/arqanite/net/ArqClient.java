@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.util.Random;
 
 public final class ArqClient {
     private final Socket socket;

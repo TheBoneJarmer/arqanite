@@ -1,7 +1,7 @@
 package be.labruyere.arqanite;
 
 import be.labruyere.arqanore.enums.Keys;
-import be.labruyere.arqanore.exceptions.ArqanoreException;
+import be.labruyere.arqanore.exceptions.Exception;
 import be.labruyere.arqanore.utils.EnumUtils;
 
 import java.io.File;

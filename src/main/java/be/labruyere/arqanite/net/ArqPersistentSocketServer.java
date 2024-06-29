@@ -1,7 +1,6 @@
 package be.labruyere.arqanite.net;
 
 import be.labruyere.arqanite.enums.ArqConnection;
-import be.labruyere.arqanore.exceptions.ArqanoreException;
 
 import java.io.*;
 import java.net.*;
@@ -63,7 +62,7 @@ public class ArqPersistentSocketServer {
         return stream.findFirst().orElse(null);
     }
 
-    public void start(int port) throws ArqanoreException {
+    public void start(int port) {
         if (server != null && server.isAlive()) {
             return;
         }
@@ -107,7 +106,7 @@ public class ArqPersistentSocketServer {
         public ArqPersistentClient[] clients;
         public boolean isRunning;
 
-        public ServerThread(int port) throws ArqanoreException {
+        public ServerThread(int port) {
             super("arq_server");
 
             try {
@@ -328,7 +327,7 @@ public class ArqPersistentSocketServer {
             onClose(client, closeReason);
         }
 
-        private ArrayList<ArqMessage> parse() throws ArqanoreException {
+        private ArrayList<ArqMessage> parse() throws Exception {
             var result = new ArrayList<ArqMessage>();
             var index1 = data.toString().indexOf(ArqMessage.PREFIX);
             var index2 = data.toString().indexOf(ArqMessage.SUFFIX);

@@ -1,7 +1,5 @@
 package be.labruyere.arqanite.net;
 
-import be.labruyere.arqanore.exceptions.ArqanoreException;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -31,7 +29,7 @@ public class ArqSocketServer {
         this.acceptTimeout = acceptTimeout;
     }
 
-    public void start(int port) throws ArqanoreException {
+    public void start(int port) throws Exception {
         if (thread != null && thread.isAlive()) {
             return;
         }
@@ -71,7 +69,7 @@ public class ArqSocketServer {
         public boolean isConnected;
         public boolean isDisconnected;
 
-        public ServerThread(int port) throws ArqanoreException {
+        public ServerThread(int port) throws Exception {
             super("arq_server");
 
             try {
@@ -147,7 +145,7 @@ public class ArqSocketServer {
             }
         }
 
-        private ArqMessage parse(byte[] data) throws ArqanoreException {
+        private ArqMessage parse(byte[] data) throws Exception {
             var msg = new ArqMessage();
             msg.parse(data, data.length);
 

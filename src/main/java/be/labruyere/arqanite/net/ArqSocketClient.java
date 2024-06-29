@@ -1,7 +1,5 @@
 package be.labruyere.arqanite.net;
 
-import be.labruyere.arqanore.exceptions.ArqanoreException;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -40,7 +38,7 @@ public class ArqSocketClient {
         this.timeout = timeout;
     }
 
-    public String send(String action, String body) throws ArqanoreException {
+    public String send(String action, String body) throws Exception {
         var buffer = new byte[1024 * 10];
         var sb = new StringBuilder();
         var eof = false;
@@ -76,9 +74,9 @@ public class ArqSocketClient {
 
             socket.close();
         } catch (SocketTimeoutException e) {
-            throw new ArqanoreException("Socket timeout", e);
+            throw new Exception("Socket timeout", e);
         } catch (IOException e) {
-            throw new ArqanoreException("Failed to send message", e);
+            throw new Exception("Failed to send message", e);
         }
 
         return sb.toString();

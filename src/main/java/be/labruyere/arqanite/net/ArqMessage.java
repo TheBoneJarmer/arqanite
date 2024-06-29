@@ -1,7 +1,5 @@
 package be.labruyere.arqanite.net;
 
-import be.labruyere.arqanore.exceptions.ArqanoreException;
-
 public class ArqMessage {
     public static final String PREFIX = "<ARQ>";
     public static final String SUFFIX = "</ARQ>";
@@ -34,7 +32,7 @@ public class ArqMessage {
         this.body = null;
     }
 
-    public void parse(byte[] bytes, int length) throws ArqanoreException {
+    public void parse(byte[] bytes, int length) throws Exception {
         var raw = new String(bytes);
 
         try {
@@ -49,7 +47,7 @@ public class ArqMessage {
                 body = null;
             }
         } catch (Exception e) {
-            throw new ArqanoreException("Failed to parse message '" + raw + "'", e);
+            throw new Exception("Failed to parse message '" + raw + "'", e);
         }
     }
 

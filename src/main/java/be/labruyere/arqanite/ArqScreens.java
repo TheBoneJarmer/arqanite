@@ -2,7 +2,6 @@ package be.labruyere.arqanite;
 
 import be.labruyere.arqanite.interfaces.IScreen;
 import be.labruyere.arqanore.Window;
-import be.labruyere.arqanore.exceptions.ArqanoreException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,7 +61,7 @@ public class ArqScreens {
 
     public static void addScreen(String key, IScreen screen) throws Exception {
         if (screens.containsKey(key)) {
-            throw new ArqanoreException("A screen with key " + key + " has already been added");
+            throw new Exception("A screen with key " + key + " has already been added");
         }
 
         screens.put(key, screen);
@@ -100,18 +99,18 @@ public class ArqScreens {
         }
     }
     
-    public static void navigate(String screen) throws ArqanoreException {
+    public static void navigate(String screen) throws Exception {
         navigate(screen, null);
     }
     
-    public static void navigate(String screen, Object arg0) throws ArqanoreException {
+    public static void navigate(String screen, Object arg0) throws Exception {
         var args = new Object[1];
         args[0] = arg0;
         
         navigate(screen, args);
     }
     
-    public static void navigate(String screen, Object arg0, Object arg1) throws ArqanoreException {
+    public static void navigate(String screen, Object arg0, Object arg1) throws Exception {
         var args = new Object[2];
         args[0] = arg0;
         args[1] = arg1;
@@ -119,7 +118,7 @@ public class ArqScreens {
         navigate(screen, args);
     }
     
-    public static void navigate(String screen, Object arg0, Object arg1, Object arg2) throws ArqanoreException {
+    public static void navigate(String screen, Object arg0, Object arg1, Object arg2) throws Exception {
         var args = new Object[3];
         args[0] = arg0;
         args[1] = arg1;
@@ -128,7 +127,7 @@ public class ArqScreens {
         navigate(screen, args);
     }
     
-    public static void navigate(String screen, Object arg0, Object arg1, Object arg2, Object arg3) throws ArqanoreException {
+    public static void navigate(String screen, Object arg0, Object arg1, Object arg2, Object arg3) throws Exception {
         var args = new Object[4];
         args[0] = arg0;
         args[1] = arg1;
@@ -138,7 +137,7 @@ public class ArqScreens {
         navigate(screen, args);
     }
     
-    public static void navigate(String screen, Object arg0, Object arg1, Object arg2, Object arg3, Object arg4) throws ArqanoreException {
+    public static void navigate(String screen, Object arg0, Object arg1, Object arg2, Object arg3, Object arg4) throws Exception {
         var args = new Object[5];
         args[0] = arg0;
         args[1] = arg1;
@@ -149,9 +148,9 @@ public class ArqScreens {
         navigate(screen, args);
     }
 
-    public static void navigate(String screen, Object[] args) throws ArqanoreException {
+    public static void navigate(String screen, Object[] args) throws Exception {
         if (!screens.containsKey(screen)) {
-            throw new ArqanoreException("Screen " + screen + " not found");
+            throw new Exception("Screen " + screen + " not found");
         }
 
         next = new ScreenEntry();
