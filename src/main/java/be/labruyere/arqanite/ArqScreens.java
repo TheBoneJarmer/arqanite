@@ -68,12 +68,6 @@ public class ArqScreens {
         screens.put(key, screen);
     }
 
-    public static void tick(Window window, double dt) throws Exception {
-        if (current != null) {
-            screens.get(current.screen).tick(window, dt);
-        }
-    }
-
     public static void update(Window window, double at) throws Exception {
         if (next != null) {
             history.add(current);
