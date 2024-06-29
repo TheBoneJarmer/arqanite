@@ -3,7 +3,6 @@ package be.labruyere.arqanite;
 import be.labruyere.arqanore.Joystick;
 import be.labruyere.arqanore.Keyboard;
 import be.labruyere.arqanore.enums.Keys;
-import be.labruyere.arqanore.exceptions.Exception;
 
 import java.util.HashMap;
 
@@ -32,7 +31,7 @@ public class ArqInput {
         return !joystickDisabled[joystickId];
     }
 
-    public static boolean isJoystickConnected() throws Exception {
+    public static boolean isJoystickConnected() {
         return joystickConnected[joystickId];
     }
 

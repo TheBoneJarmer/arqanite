@@ -1,7 +1,6 @@
 package be.labruyere.arqanite;
 
 import be.labruyere.arqanore.enums.Keys;
-import be.labruyere.arqanore.exceptions.Exception;
 import be.labruyere.arqanore.utils.EnumUtils;
 
 import java.io.File;
@@ -20,7 +19,7 @@ public class ArqSettings {
         reset();
     }
 
-    private static HashMap<String, String> settings;
+    private static final HashMap<String, String> settings;
 
     public static String getString(String key) {
         return settings.get(key);
